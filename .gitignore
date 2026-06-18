@@ -3,6 +3,9 @@
 .env
 .env.backup
 .env.production
+.deploy-db-password.txt
+.deploy-log.txt
+.cloudrun-env.yaml
 .phpactor.json
 .phpunit.result.cache
 /.fleet
