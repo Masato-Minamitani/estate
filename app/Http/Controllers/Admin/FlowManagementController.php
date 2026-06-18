@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FlowManagement;
 use App\Models\ScreeningCompletion;
 use App\Models\SettlementManagement;
+use App\Support\AdminListSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,8 +14,10 @@ use Illuminate\View\View;
 
 class FlowManagementController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $search = AdminListSearch::term($request->input('search'));
+
         ScreeningCompletion::query()
             ->whereHas('application', fn ($query) => $query->where('screening_ok', true))
             ->each(fn (ScreeningCompletion $screeningCompletion) => ScreeningCompletion::syncFromScreeningCompletion($screeningCompletion));
@@ -26,14 +29,16 @@ class FlowManagementController extends Controller
                 ->whereHas('application', fn ($query) => $query->where('screening_ok', true)))
             ->join('screening_completions', 'flow_managements.screening_completion_id', '=', 'screening_completions.id')
             ->join('applications', 'screening_completions.application_id', '=', 'applications.id')
+            ->tap(fn ($query) => AdminListSearch::applyToFlowManagement($query, $search))
             ->orderByDesc('applications.created_at')
             ->select('flow_managements.*')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $booleanFields = FlowManagement::booleanFields();
         $columnLabels = FlowManagement::columnLabels();
 
-        return view('admin.flow-managements.index', compact('flowManagements', 'booleanFields', 'columnLabels'));
+        return view('admin.flow-managements.index', compact('flowManagements', 'booleanFields', 'columnLabels', 'search'));
     }
 
     public function updateField(Request $request, FlowManagement $flowManagement): JsonResponse

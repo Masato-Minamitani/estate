@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="ja" class="admin-loading">
+@php($adminPageLoaderEnabled = false)
+<html lang="ja" @class(['admin-loading' => $adminPageLoaderEnabled])>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', '管理画面')</title>
     <style>
+        @if ($adminPageLoaderEnabled)
         html.admin-loading { overflow: hidden; }
         html.admin-skip-loader { overflow: auto; }
         html.admin-skip-loader .admin-page-loader { display: none; }
@@ -26,38 +28,41 @@
         }
         .admin-page-loader-inner {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            width: min(320px, 80vw);
+            justify-content: center;
         }
-        .admin-page-loader-percent {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #5383c3;
-            line-height: 1;
-            font-variant-numeric: tabular-nums;
+        .admin-page-loader-animation-wrap {
+            width: min(140px, 36vw);
+            aspect-ratio: 55 / 50;
         }
-        .admin-page-loader-bar-track {
+        .admin-page-loader-animation-svg {
+            display: block;
             width: 100%;
-            height: 8px;
-            background: rgba(83, 131, 195, 0.2);
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        .admin-page-loader-bar {
             height: 100%;
-            width: 0%;
-            background: #5383c3;
-            border-radius: 9999px;
-            transition: width 0.25s ease-out;
+            overflow: visible;
+            pointer-events: none;
         }
-        .admin-page-loader-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #5383c3;
+        .admin-loader-path-track {
+            fill: none;
+            stroke: #4680bd;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.18;
         }
+        .admin-loader-path-active {
+            fill: none;
+            stroke: #4680bd;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: var(--loader-path-length, 240);
+            stroke-dashoffset: var(--loader-path-length, 240);
+            transition: stroke-dashoffset 0.22s ease-out;
+        }
+        @endif
     </style>
+    @if ($adminPageLoaderEnabled)
     <script>
         (function () {
             if (sessionStorage.getItem('admin-skip-loader') === '1') {
@@ -66,6 +71,7 @@
             }
         })();
     </script>
+    @endif
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -115,6 +121,10 @@
         }
         .admin-table-sticky .sticky-col-last {
             box-shadow: 4px 0 6px -2px rgba(15, 23, 42, 0.12);
+        }
+
+        tr.text-white a.admin-checked-link {
+            color: #fff;
         }
 
         .admin-main-content {
@@ -167,20 +177,29 @@
             color: #fff;
             box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
         }
+
+        .admin-header {
+            background: linear-gradient(to right, #85aecf 0%, #6d96c4 30%, #4a79b8 70%, #355f8f 100%);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
+    @if ($adminPageLoaderEnabled)
     <div id="admin-page-loader" class="admin-page-loader" aria-live="polite" aria-busy="true">
         <div class="admin-page-loader-inner">
-            <p id="admin-page-loader-percent" class="admin-page-loader-percent">0%</p>
-            <div class="admin-page-loader-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="admin-page-loader-label">
-                <div id="admin-page-loader-bar" class="admin-page-loader-bar"></div>
-            </div>
-            <p id="admin-page-loader-label" class="admin-page-loader-label">読み込み中...</p>
+            <x-admin-loader-logo
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                aria-label="読み込み中"
+            />
         </div>
     </div>
+    @endif
 
-    <header class="bg-[#5383c3] shadow-md">
+    <header class="admin-header">
         <div class="flex items-center justify-start px-6 py-3">
             <img
                 src="{{ asset('images/care-earth-home-logo.png') }}"
@@ -220,7 +239,7 @@
             </nav>
         </aside>
 
-        <main id="admin-main-content" class="admin-main-content flex-1 p-8 overflow-x-auto">
+        <main id="admin-main-content" class="admin-main-content {{ $adminPageLoaderEnabled ? '' : 'is-visible' }} flex-1 p-8 overflow-x-auto">
             @yield('content')
         </main>
     </div>
@@ -277,9 +296,12 @@
     <script>
         function syncStickyCellBackgrounds(table) {
             table.querySelectorAll('tbody tr').forEach((row) => {
-                const backgroundColor = getComputedStyle(row).backgroundColor;
+                const rowStyle = getComputedStyle(row);
+                const backgroundColor = rowStyle.backgroundColor;
+                const color = rowStyle.color;
                 row.querySelectorAll('.sticky-col').forEach((cell) => {
                     cell.style.backgroundColor = backgroundColor;
+                    cell.style.color = color;
                 });
             });
         }
@@ -321,6 +343,7 @@
             window.addEventListener('resize', window.refreshAdminStickyColumns);
         });
 
+        @if ($adminPageLoaderEnabled)
         document.addEventListener('DOMContentLoaded', () => {
             const loader = document.getElementById('admin-page-loader');
             const mainContent = document.getElementById('admin-main-content');
@@ -335,26 +358,30 @@
                 return;
             }
 
-            const percentEl = document.getElementById('admin-page-loader-percent');
-            const barEl = document.getElementById('admin-page-loader-bar');
+            const pathEl = document.getElementById('admin-page-loader-path');
             const progressTrack = loader?.querySelector('[role="progressbar"]');
             const loaderStartedAt = performance.now();
             const minLoaderDuration = 600;
             let progress = 0;
             let progressTimer = null;
+            let pathLength = 0;
+
+            if (pathEl) {
+                pathLength = pathEl.getTotalLength();
+                pathEl.style.setProperty('--loader-path-length', String(pathLength));
+                pathEl.style.strokeDasharray = String(pathLength);
+                pathEl.style.strokeDashoffset = String(pathLength);
+            }
 
             const setProgress = (value) => {
                 progress = Math.min(100, Math.max(0, value));
-                const rounded = Math.round(progress);
 
-                if (percentEl) {
-                    percentEl.textContent = `${rounded}%`;
+                if (pathEl && pathLength > 0) {
+                    pathEl.style.strokeDashoffset = String(pathLength * (1 - progress / 100));
                 }
-                if (barEl) {
-                    barEl.style.width = `${progress}%`;
-                }
+
                 if (progressTrack) {
-                    progressTrack.setAttribute('aria-valuenow', String(rounded));
+                    progressTrack.setAttribute('aria-valuenow', String(Math.round(progress)));
                 }
             };
 
@@ -376,7 +403,7 @@
                 }
 
                 setProgress(100);
-                window.setTimeout(callback, 250);
+                window.setTimeout(callback, 280);
             };
 
             const hidePageLoader = () => {
@@ -390,6 +417,10 @@
                 const remaining = Math.max(0, minLoaderDuration - elapsed);
 
                 finishProgress(() => {
+                    if (progressTrack) {
+                        progressTrack.setAttribute('aria-valuenow', '100');
+                    }
+
                     window.setTimeout(() => {
                         loader.classList.add('is-hidden');
                         loader.setAttribute('aria-busy', 'false');
@@ -411,6 +442,7 @@
                 window.addEventListener('load', hidePageLoader, { once: true });
             }
         });
+        @endif
 
         document.addEventListener('DOMContentLoaded', () => {
             const mainContent = document.getElementById('admin-main-content');
@@ -421,6 +453,24 @@
                     navLink.classList.toggle('is-active', navLink === activeLink);
                 });
             };
+
+            document.querySelectorAll('.admin-pagination-link').forEach((link) => {
+                link.addEventListener('click', () => {
+                    sessionStorage.setItem('admin-skip-loader', '1');
+                });
+            });
+
+            document.querySelectorAll('.admin-search-clear-link').forEach((link) => {
+                link.addEventListener('click', () => {
+                    sessionStorage.setItem('admin-skip-loader', '1');
+                });
+            });
+
+            document.querySelectorAll('.admin-search-form').forEach((form) => {
+                form.addEventListener('submit', () => {
+                    sessionStorage.setItem('admin-skip-loader', '1');
+                });
+            });
 
             navLinks.forEach((link) => {
                 link.addEventListener('click', (event) => {

@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ScreeningCompletion;
+use App\Support\AdminListSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ScreeningCompletionController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $search = AdminListSearch::term($request->input('search'));
+
         Application::query()
             ->where('screening_ok', true)
             ->each(fn (Application $application) => ScreeningCompletion::syncFromApplication($application));
@@ -21,11 +24,13 @@ class ScreeningCompletionController extends Controller
             ->with('application')
             ->whereHas('application', fn ($query) => $query->where('screening_ok', true))
             ->join('applications', 'screening_completions.application_id', '=', 'applications.id')
+            ->tap(fn ($query) => AdminListSearch::applyToScreeningCompletion($query, $search))
             ->orderByDesc('applications.created_at')
             ->select('screening_completions.*')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('admin.screening-completions.index', compact('screeningCompletions'));
+        return view('admin.screening-completions.index', compact('screeningCompletions', 'search'));
     }
 
     public function updateFlowTransition(Request $request, ScreeningCompletion $screeningCompletion): JsonResponse

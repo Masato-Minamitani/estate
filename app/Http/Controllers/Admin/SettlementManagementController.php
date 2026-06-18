@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\FlowManagement;
 use App\Models\SettlementManagement;
+use App\Support\AdminListSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,8 +13,10 @@ use Illuminate\View\View;
 
 class SettlementManagementController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $search = AdminListSearch::term($request->input('search'));
+
         FlowManagement::query()
             ->whereHas('screeningCompletion', fn ($query) => $query
                 ->where('flow_management_transition', true)
@@ -30,14 +33,16 @@ class SettlementManagementController extends Controller
             ->join('flow_managements', 'settlement_managements.flow_management_id', '=', 'flow_managements.id')
             ->join('screening_completions', 'flow_managements.screening_completion_id', '=', 'screening_completions.id')
             ->join('applications', 'screening_completions.application_id', '=', 'applications.id')
+            ->tap(fn ($query) => AdminListSearch::applyToSettlementManagement($query, $search))
             ->orderByDesc('applications.created_at')
             ->select('settlement_managements.*')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         $booleanFields = SettlementManagement::booleanFields();
         $columnLabels = SettlementManagement::columnLabels();
 
-        return view('admin.settlement-managements.index', compact('settlementManagements', 'booleanFields', 'columnLabels'));
+        return view('admin.settlement-managements.index', compact('settlementManagements', 'booleanFields', 'columnLabels', 'search'));
     }
 
     public function updateField(Request $request, SettlementManagement $settlementManagement): JsonResponse

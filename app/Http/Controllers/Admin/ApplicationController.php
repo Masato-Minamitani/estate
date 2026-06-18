@@ -5,19 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ScreeningCompletion;
+use App\Support\AdminListSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ApplicationController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $applications = Application::query()
-            ->orderByDesc('created_at')
-            ->get();
+        $search = AdminListSearch::term($request->input('search'));
 
-        return view('admin.applications.index', compact('applications'));
+        $applications = Application::query()
+            ->tap(fn ($query) => AdminListSearch::applyToApplication($query, $search))
+            ->orderByDesc('created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.applications.index', compact('applications', 'search'));
     }
 
     public function updateFlags(Request $request, Application $application): JsonResponse

@@ -3,13 +3,18 @@
 @section('title', '審査完了一覧 - 管理画面')
 
 @section('content')
-    <div class="mb-6">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-2xl font-bold text-slate-900">審査完了一覧</h2>
+        <x-admin-search-form :value="$search" />
     </div>
 
     @if ($screeningCompletions->isEmpty())
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
-            審査ＯＫの申込データがありません。
+            @if ($search !== '')
+                「{{ $search }}」に一致するデータがありません。
+            @else
+                審査ＯＫの申込データがありません。
+            @endif
         </div>
     @else
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -27,7 +32,7 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($screeningCompletions as $screeningCompletion)
                             <tr
-                                class="align-top transition-colors {{ $screeningCompletion->flow_management_transition ? 'bg-blue-100 text-blue-900' : 'bg-white hover:bg-slate-50' }}"
+                                class="align-top transition-colors {{ $screeningCompletion->flow_management_transition ? 'bg-blue-100 text-white' : 'bg-white hover:bg-slate-50' }}"
                                 data-screening-completion-id="{{ $screeningCompletion->id }}"
                             >
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $screeningCompletion->application->created_at->format('Y/m/d H:i') }}</td>
@@ -47,6 +52,12 @@
                 </table>
             </div>
         </div>
+
+        @if ($screeningCompletions->hasPages())
+            <div class="mt-6 pb-2">
+                {{ $screeningCompletions->links('vendor.pagination.admin') }}
+            </div>
+        @endif
     @endif
 @endsection
 
@@ -56,10 +67,10 @@
         const checkbox = row.querySelector('.flow-transition-checkbox');
         const isChecked = checkbox.checked;
 
-        row.classList.remove('bg-white', 'hover:bg-slate-50', 'bg-blue-100', 'text-blue-900');
+        row.classList.remove('bg-white', 'hover:bg-slate-50', 'bg-blue-100', 'text-white');
 
         if (isChecked) {
-            row.classList.add('bg-blue-100', 'text-blue-900');
+            row.classList.add('bg-blue-100', 'text-white');
         } else {
             row.classList.add('bg-white', 'hover:bg-slate-50');
         }

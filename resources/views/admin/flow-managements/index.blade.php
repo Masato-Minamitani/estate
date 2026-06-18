@@ -3,13 +3,18 @@
 @section('title', 'フロー管理 - 管理画面')
 
 @section('content')
-    <div class="mb-6">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-2xl font-bold text-slate-900">フロー管理</h2>
+        <x-admin-search-form :value="$search" />
     </div>
 
     @if ($flowManagements->isEmpty())
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
-            フロー管理移行チェック済みのデータがありません。
+            @if ($search !== '')
+                「{{ $search }}」に一致するデータがありません。
+            @else
+                フロー管理移行チェック済みのデータがありません。
+            @endif
         </div>
     @else
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -105,7 +110,7 @@
                                             >
                                         </td>
                                     @endif
-                                    <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->{$field} ? 'bg-blue-100 text-blue-900' : '' }}">
+                                    <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->{$field} ? 'bg-blue-100 text-white' : '' }}">
                                         <input
                                             type="checkbox"
                                             class="flow-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -114,7 +119,7 @@
                                         >
                                     </td>
                                 @endforeach
-                                <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->settlement_transition ? 'bg-blue-100 text-blue-900' : '' }}">
+                                <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->settlement_transition ? 'bg-blue-100 text-white' : '' }}">
                                     <input
                                         type="checkbox"
                                         class="flow-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -128,6 +133,12 @@
                 </table>
             </div>
         </div>
+
+        @if ($flowManagements->hasPages())
+            <div class="mt-6 pb-2">
+                {{ $flowManagements->links('vendor.pagination.admin') }}
+            </div>
+        @endif
     @endif
 @endsection
 
@@ -140,7 +151,7 @@
         }
 
         cell.classList.toggle('bg-blue-100', checkbox.checked);
-        cell.classList.toggle('text-blue-900', checkbox.checked);
+        cell.classList.toggle('text-white', checkbox.checked);
     }
 
     document.querySelectorAll('.flow-field-checkbox').forEach((checkbox) => {
