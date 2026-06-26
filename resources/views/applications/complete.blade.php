@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.rental')
 
 @section('content')
     <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center max-w-lg mx-auto">

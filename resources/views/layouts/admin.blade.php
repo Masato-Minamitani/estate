@@ -287,12 +287,40 @@
     @endif
 
     <header class="admin-header">
-        <div class="flex items-center justify-start px-6 py-3">
-            <img
-                src="{{ asset('images/care-earth-home-logo.png') }}"
-                alt="Care Earth Home"
-                class="h-12 w-auto rounded-md bg-white px-2.5 py-1.5 shadow-sm"
-            >
+        <div class="flex items-center justify-between gap-4 px-6 py-3">
+            <a href="{{ route('properties.index') }}">
+                <img
+                    src="{{ asset('images/care-earth-home-logo.png') }}"
+                    alt="Care Earth Home"
+                    class="h-12 w-auto rounded-md bg-white px-2.5 py-1.5 shadow-sm"
+                >
+            </a>
+            <div class="flex items-center gap-3 flex-wrap justify-end">
+                @if (session('authenticated') || Auth::check())
+                    <x-portal-menu variant="admin" />
+                    @if (session('authenticated') && ! Auth::check())
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="rounded-lg border-2 border-white/70 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white hover:bg-white hover:text-[#5383c3] transition-colors"
+                            >
+                                ログアウト
+                            </button>
+                        </form>
+                    @elseif (Auth::check())
+                        <form method="POST" action="{{ route('admin.logout') }}">
+                            @csrf
+                            <button
+                                type="submit"
+                                class="rounded-lg border-2 border-white/70 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white hover:bg-white hover:text-[#5383c3] transition-colors"
+                            >
+                                ログアウト
+                            </button>
+                        </form>
+                    @endif
+                @endif
+            </div>
         </div>
     </header>
 
@@ -320,7 +348,10 @@
             </nav>
         </aside>
 
-        <main id="admin-main-content" class="admin-main-content {{ $adminPageLoaderEnabled ? '' : 'is-visible' }} flex-1 p-8 overflow-x-auto">
+        <main id="admin-main-content" class="admin-main-content {{ $adminPageLoaderEnabled ? '' : 'is-visible' }} flex-1 p-8 overflow-x-auto portal-master-content">
+            @if (session('success'))
+                <div class="mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-800 text-sm">{{ session('success') }}</div>
+            @endif
             @yield('content')
         </main>
     </div>

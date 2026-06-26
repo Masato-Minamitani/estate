@@ -23,6 +23,8 @@ class StoreApplicationRequest extends FormRequest
             'memo' => $this->filled('memo') ? $this->input('memo') : null,
             'property_documents_url' => $this->filled('property_documents_url') ? $this->input('property_documents_url') : null,
             'appliance_support_notes' => $this->filled('appliance_support_notes') ? $this->input('appliance_support_notes') : null,
+            'has_broker_fee' => filter_var($this->input('has_broker_fee', false), FILTER_VALIDATE_BOOLEAN),
+            'broker_fee' => $this->boolean('has_broker_fee') ? $this->input('broker_fee') : null,
         ]);
     }
 

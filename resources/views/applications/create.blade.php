@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.rental')
 
 @section('content')
     <div class="mb-8">
@@ -28,6 +28,19 @@
                     required
                 />
                 <x-form-field label="広告料" name="advertising_fee" type="number" min="0" required />
+                <div class="md:col-span-2 space-y-3">
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <input
+                            type="checkbox"
+                            name="has_broker_fee"
+                            value="1"
+                            class="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                            @checked(old('has_broker_fee'))
+                        >
+                        仲介手数料あり
+                    </label>
+                    <x-form-field label="仲介手数料（金額）" name="broker_fee" type="number" min="0" />
+                </div>
                 <x-form-field
                     label="仲介手数料"
                     name="has_broker_fee"

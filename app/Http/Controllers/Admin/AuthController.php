@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\AdminUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -20,7 +21,58 @@ class AuthController extends Controller
             return redirect()->route('admin.applications.index');
         }
 
-        return view('admin.auth.login');
+        return view('admin.auth.login', [
+            'googleConfigured' => $this->isGoogleConfigured(),
+            'localLoginEnabled' => $this->isLocalLoginEnabled(),
+        ]);
+    }
+
+    public function login(Request $request): RedirectResponse
+    {
+        if (! $this->isLocalLoginEnabled()) {
+            abort(404);
+        }
+
+        if (Auth::check() && $this->isAllowedAdmin(Auth::user()->email)) {
+            return redirect()->route('admin.applications.index');
+        }
+
+        $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $email = strtolower(trim($request->input('email')));
+
+        if (! $this->isAllowedAdmin($email)) {
+            usleep(500000);
+
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'このメールアドレスでは管理画面にアクセスできません。']);
+        }
+
+        $hash = (string) config('admin.local_password_hash');
+        if ($hash === '' || ! password_verify($request->input('password'), $hash)) {
+            usleep(500000);
+
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'メールアドレスまたはパスワードが正しくありません。']);
+        }
+
+        $user = AdminUser::query()->updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => Str::before($email, '@'),
+                'email_verified_at' => now(),
+                'password' => Hash::make(Str::random(64)),
+            ]
+        );
+
+        Auth::login($user, remember: true);
+
+        return redirect()->intended(route('admin.applications.index'));
     }
 
     public function redirectToGoogle(): SymfonyRedirectResponse
@@ -54,7 +106,7 @@ class AuthController extends Controller
                 ->with('error', 'このGoogleアカウントでは管理画面にアクセスできません。許可されたアカウントでChromeにログインしているかご確認ください。');
         }
 
-        $user = User::query()->updateOrCreate(
+        $user = AdminUser::query()->updateOrCreate(
             ['email' => $email],
             [
                 'name' => $googleUser->getName() ?: Str::before($email, '@'),
@@ -91,5 +143,20 @@ class AuthController extends Controller
         );
 
         return in_array(strtolower(trim($email)), $allowedEmails, true);
+    }
+
+    protected function isGoogleConfigured(): bool
+    {
+        return filled(config('services.google.client_id'))
+            && filled(config('services.google.client_secret'));
+    }
+
+    protected function isLocalLoginEnabled(): bool
+    {
+        if (! config('admin.local_login_enabled')) {
+            return false;
+        }
+
+        return ! $this->isGoogleConfigured() || config('admin.local_login_enabled') === true;
     }
 }

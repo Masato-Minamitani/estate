@@ -50,6 +50,7 @@ class Customer extends Model
         return [
             'move_in_date' => 'date',
             'contract_period_type' => 'boolean',
+            'customer_info_completed' => 'boolean',
             'date_of_birth' => 'date',
             'is_married' => 'boolean',
             'emergency_contact_date_of_birth' => 'date',

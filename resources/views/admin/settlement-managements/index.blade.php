@@ -24,6 +24,7 @@
                             <th class="sticky-col px-3 py-3 font-medium whitespace-nowrap min-w-[90px]">{{ $columnLabels['staff_in_charge'] }}</th>
                             <th class="sticky-col px-3 py-3 font-medium whitespace-nowrap min-w-[160px]">{{ $columnLabels['property_name'] }}</th>
                             <th class="sticky-col sticky-col-last px-3 py-3 font-medium whitespace-nowrap min-w-[110px]">{{ $columnLabels['contract_date'] }}</th>
+                            <th class="px-3 py-3 font-medium whitespace-nowrap min-w-[90px]">{{ $columnLabels['fee_type'] }}</th>
                             <th class="px-3 py-3 font-medium whitespace-nowrap min-w-[100px]">{{ $columnLabels['estimated_sales'] }}</th>
                             <th class="px-3 py-3 font-medium whitespace-nowrap text-center">{{ $columnLabels['settlement_transfer_request'] }}</th>
                             <th class="px-3 py-3 font-medium whitespace-nowrap">{{ $columnLabels['settlement_transfer_date'] }}</th>

@@ -36,8 +36,34 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::patch('/flow-managements/{flowManagement}/fields', [AdminFlowManagementController::class, 'updateField'])->name('flow-managements.update-field');
 
-    Route::get('/settlement-managements', [AdminSettlementManagementController::class, 'index'])->name('settlement-managements.index');
-    Route::patch('/settlement-managements/{settlementManagement}/fields', [AdminSettlementManagementController::class, 'updateField'])->name('settlement-managements.update-field');
+        Route::get('/flow-managements', [AdminFlowManagementController::class, 'index'])->name('flow-managements.index');
+        Route::patch('/flow-managements/{flowManagement}/fields', [AdminFlowManagementController::class, 'updateField'])->name('flow-managements.update-field');
+
+        Route::get('/settlement-managements', [AdminSettlementManagementController::class, 'index'])->name('settlement-managements.index');
+        Route::patch('/settlement-managements/{settlementManagement}/fields', [AdminSettlementManagementController::class, 'updateField'])->name('settlement-managements.update-field');
+    });
+});
+
+// ── 物件マスター（CareEarthHome 認証） ──
+Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('login', [AuthController::class, 'login']);
+Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::middleware('careearth.auth')->group(function () {
+    Route::get('/', [PropertyController::class, 'index'])->name('properties.index');
+    Route::get('properties/create', [PropertyController::class, 'create'])->name('properties.create');
+    Route::post('properties', [PropertyController::class, 'store'])->name('properties.store');
+    Route::get('properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
+    Route::get('properties/{property}/edit', [PropertyController::class, 'edit'])->name('properties.edit');
+    Route::put('properties/{property}', [PropertyController::class, 'update'])->name('properties.update');
+    Route::get('reference', [ReferenceController::class, 'index'])->name('reference.index');
+    Route::get('files/{property}/{field}', [FileController::class, 'show'])->name('files.show');
+
+    Route::middleware('careearth.admin')->group(function () {
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+    });
 });
 
 Route::prefix('master')->name('master.')->group(function () {
