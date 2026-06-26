@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '管理画面ログイン')
+@section('title', 'Care Earth Home-管理画面')
 
 @section('content')
     <div class="max-w-md mx-auto">

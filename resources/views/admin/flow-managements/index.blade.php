@@ -1,7 +1,5 @@
 @extends('layouts.admin')
 
-@section('title', 'フロー管理 - 管理画面')
-
 @section('content')
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-2xl font-bold text-slate-900">フロー管理</h2>
@@ -18,13 +16,14 @@
         </div>
     @else
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="admin-table-sticky min-w-full text-sm text-left" data-sticky-cols="3">
+            <div class="admin-table-scroll overflow-x-auto">
+                <table class="admin-table-sticky min-w-full text-sm text-left" data-sticky-cols="4">
                     <thead class="bg-slate-100 text-slate-700">
                         <tr>
                             <th class="sticky-col px-3 py-3 font-medium whitespace-nowrap min-w-[130px]">作成日時</th>
                             <th class="sticky-col px-3 py-3 font-medium whitespace-nowrap min-w-[90px]">{{ $columnLabels['staff_in_charge'] }}</th>
-                            <th class="sticky-col sticky-col-last px-3 py-3 font-medium whitespace-nowrap min-w-[160px]">{{ $columnLabels['property_name_room'] }}</th>
+                            <th class="sticky-col px-3 py-3 font-medium whitespace-nowrap min-w-[140px]">{{ $columnLabels['property_name'] }}</th>
+                            <th class="sticky-col sticky-col-last px-3 py-3 font-medium whitespace-nowrap min-w-[90px]">{{ $columnLabels['room_number'] }}</th>
                             <th class="px-3 py-3 font-medium whitespace-nowrap">{{ $columnLabels['application_method'] }}</th>
                             <th class="px-3 py-3 font-medium whitespace-nowrap min-w-[180px]">{{ $columnLabels['memo'] }}</th>
                             <th class="px-3 py-3 font-medium whitespace-nowrap">{{ $columnLabels['move_in_date'] }}</th>
@@ -49,12 +48,13 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach ($flowManagements as $flowManagement)
                             <tr
-                                class="align-top bg-white hover:bg-slate-50 transition-colors"
+                                class="align-top bg-white hover:bg-slate-50 transition-colors {{ $flowManagement->settlement_transition ? 'has-sticky-highlight-blue' : '' }}"
                                 data-flow-management-id="{{ $flowManagement->id }}"
                             >
-                                <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $flowManagement->screeningCompletion?->application?->created_at?->format('Y/m/d H:i') ?? '—' }}</td>
+                                <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $flowManagement->application?->created_at?->format('Y/m/d H:i') ?? '—' }}</td>
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $flowManagement->staff_in_charge ?? '—' }}</td>
-                                <td class="sticky-col sticky-col-last px-3 py-3 whitespace-nowrap">{{ $flowManagement->property_name_room ?? '—' }}</td>
+                                <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $flowManagement->property_name ?? '—' }}</td>
+                                <td class="sticky-col sticky-col-last px-3 py-3 whitespace-nowrap">{{ $flowManagement->room_number ?? '—' }}</td>
                                 <td class="px-3 py-3 whitespace-nowrap">{{ $flowManagement->application_method ?? '—' }}</td>
                                 <td class="px-3 py-3 min-w-[180px]">
                                     <textarea
@@ -64,7 +64,15 @@
                                         placeholder="MEMOを入力"
                                     >{{ $flowManagement->memo }}</textarea>
                                 </td>
-                                <td class="px-3 py-3 whitespace-nowrap">{{ $flowManagement->move_in_date?->format('Y/m/d') ?? '—' }}</td>
+                                <td class="px-3 py-3 whitespace-nowrap">
+                                    <input
+                                        type="date"
+                                        class="flow-date-field rounded border border-slate-200 px-2 py-1 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                                        data-field="move_in_date"
+                                        data-label="入居日"
+                                        value="{{ $flowManagement->move_in_date?->format('Y-m-d') }}"
+                                    >
+                                </td>
                                 <td class="px-3 py-3 min-w-[120px]">
                                     <input
                                         type="text"
@@ -110,7 +118,7 @@
                                             >
                                         </td>
                                     @endif
-                                    <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->{$field} ? 'bg-blue-100 text-white' : '' }}">
+                                    <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->{$field} ? 'admin-highlight-bg' : '' }}">
                                         <input
                                             type="checkbox"
                                             class="flow-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -119,7 +127,7 @@
                                         >
                                     </td>
                                 @endforeach
-                                <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->settlement_transition ? 'bg-blue-100 text-white' : '' }}">
+                                <td class="px-3 py-3 text-center flow-check-cell transition-colors {{ $flowManagement->settlement_transition ? 'admin-highlight-bg' : '' }}">
                                     <input
                                         type="checkbox"
                                         class="flow-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -150,9 +158,25 @@
             return;
         }
 
-        cell.classList.toggle('bg-blue-100', checkbox.checked);
-        cell.classList.toggle('text-white', checkbox.checked);
+        cell.classList.toggle('admin-highlight-bg', checkbox.checked);
     }
+
+    function updateStickyColState(row) {
+        const settlementCheckbox = row.querySelector('.flow-field-checkbox[data-field="settlement_transition"]');
+        if (!settlementCheckbox) {
+            return;
+        }
+
+        row.classList.toggle('has-sticky-highlight-blue', settlementCheckbox.checked);
+
+        if (typeof window.refreshAdminStickyColumns === 'function') {
+            window.refreshAdminStickyColumns();
+        }
+    }
+
+    document.querySelectorAll('tbody tr').forEach((row) => {
+        updateStickyColState(row);
+    });
 
     document.querySelectorAll('.flow-field-checkbox').forEach((checkbox) => {
         updateCellState(checkbox);
@@ -168,6 +192,7 @@
             if (field === 'settlement_transition' && previousChecked) {
                 target.checked = true;
                 updateCellState(target);
+                updateStickyColState(row);
 
                 const confirmed = await window.confirmUncheckTransition();
                 if (!confirmed) {
@@ -178,6 +203,9 @@
             }
 
             updateCellState(target);
+            if (field === 'settlement_transition') {
+                updateStickyColState(row);
+            }
 
             try {
                 const response = await fetch(`/admin/flow-managements/${flowManagementId}/fields`, {
@@ -195,11 +223,17 @@
                 if (!response.ok) {
                     target.checked = previousChecked;
                     updateCellState(target);
+                    if (field === 'settlement_transition') {
+                        updateStickyColState(row);
+                    }
                     alert(data.message || '更新に失敗しました。もう一度お試しください。');
                 }
             } catch (error) {
                 target.checked = previousChecked;
                 updateCellState(target);
+                if (field === 'settlement_transition') {
+                    updateStickyColState(row);
+                }
                 alert('更新に失敗しました。もう一度お試しください。');
             }
         });

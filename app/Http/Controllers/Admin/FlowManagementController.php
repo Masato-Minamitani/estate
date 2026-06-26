@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FlowManagement;
-use App\Models\ScreeningCompletion;
 use App\Models\SettlementManagement;
 use App\Support\AdminListSearch;
 use Illuminate\Http\JsonResponse;
@@ -18,17 +17,11 @@ class FlowManagementController extends Controller
     {
         $search = AdminListSearch::term($request->input('search'));
 
-        ScreeningCompletion::query()
-            ->whereHas('application', fn ($query) => $query->where('screening_ok', true))
-            ->each(fn (ScreeningCompletion $screeningCompletion) => ScreeningCompletion::syncFromScreeningCompletion($screeningCompletion));
-
         $flowManagements = FlowManagement::query()
-            ->with(['screeningCompletion.application'])
-            ->whereHas('screeningCompletion', fn ($query) => $query
-                ->where('flow_management_transition', true)
-                ->whereHas('application', fn ($query) => $query->where('screening_ok', true)))
-            ->join('screening_completions', 'flow_managements.screening_completion_id', '=', 'screening_completions.id')
-            ->join('applications', 'screening_completions.application_id', '=', 'applications.id')
+            ->with(['application'])
+            ->where('flow_management_transition', true)
+            ->whereHas('application', fn ($query) => $query->where('screening_ok', true))
+            ->join('applications', 'flow_managements.application_id', '=', 'applications.id')
             ->tap(fn ($query) => AdminListSearch::applyToFlowManagement($query, $search))
             ->orderByDesc('applications.created_at')
             ->select('flow_managements.*')
@@ -45,7 +38,7 @@ class FlowManagementController extends Controller
     {
         $field = $request->input('field');
         $allowedTextFields = ['memo', 'ad_fee_invoice_creation', 'document_deadline'];
-        $allowedDateFields = ['scheduled_visit_date', 'key_handover_date'];
+        $allowedDateFields = ['move_in_date', 'scheduled_visit_date', 'key_handover_date'];
 
         if (in_array($field, FlowManagement::booleanFields(), true)) {
             $validated = $request->validate([

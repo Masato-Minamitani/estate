@@ -46,7 +46,8 @@ class AdminListSearch
     {
         return self::apply($query, $search, [
             'staff_in_charge',
-            'property_name_room',
+            'property_name',
+            'room_number',
             'management_company_name',
             'application_method',
             'status',
@@ -59,21 +60,12 @@ class AdminListSearch
         ]);
     }
 
-    public static function applyToScreeningCompletion(Builder $query, ?string $search): Builder
-    {
-        return self::apply($query, $search, [
-            'screening_completions.staff_in_charge',
-            'screening_completions.property_name_room',
-            'screening_completions.application_method',
-            fn (Builder $nested, string $like) => $nested->orWhereRaw("DATE_FORMAT(applications.created_at, '%Y/%m/%d %H:%i') LIKE ?", [$like]),
-        ]);
-    }
-
     public static function applyToFlowManagement(Builder $query, ?string $search): Builder
     {
         return self::apply($query, $search, [
             'flow_managements.staff_in_charge',
-            'flow_managements.property_name_room',
+            'flow_managements.property_name',
+            'flow_managements.room_number',
             'flow_managements.application_method',
             'flow_managements.memo',
             'flow_managements.document_deadline',

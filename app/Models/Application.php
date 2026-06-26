@@ -4,16 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Application extends Model
 {
     protected $fillable = [
         'customer_id',
         'staff_in_charge',
-        'property_name_room',
+        'property_name',
+        'room_number',
         'scheduled_move_in_date',
         'advertising_fee',
+        'has_broker_fee',
+        'broker_fee',
         'management_company_name',
         'application_method',
         'status',
@@ -30,6 +33,7 @@ class Application extends Model
         return [
             'scheduled_move_in_date' => 'date',
             'advertising_fee' => 'integer',
+            'broker_fee' => 'integer',
             'sales_action_required' => 'boolean',
             'screening_ok' => 'boolean',
             'is_cancelled' => 'boolean',
@@ -41,9 +45,9 @@ class Application extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function screeningCompletions(): HasMany
+    public function flowManagement(): HasOne
     {
-        return $this->hasMany(ScreeningCompletion::class);
+        return $this->hasOne(FlowManagement::class);
     }
 
     /**
@@ -56,9 +60,12 @@ class Application extends Model
             'customer_id' => '顧客ID',
             'created_at' => '作成日時',
             'staff_in_charge' => '担当者',
-            'property_name_room' => '物件名＋部屋番号',
+            'property_name' => '物件名',
+            'room_number' => '部屋番号',
             'scheduled_move_in_date' => '入居予定日',
             'advertising_fee' => '広告料',
+            'has_broker_fee' => '仲介手数料',
+            'broker_fee' => '仲介手数料（金額）',
             'management_company_name' => '管理会社名',
             'application_method' => '申込方法',
             'status' => '状況',

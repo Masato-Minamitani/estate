@@ -30,6 +30,7 @@ class Customer extends Model
         'emergency_contact_address',
         'emergency_contact_mobile',
         'emergency_contact_email',
+        'customer_info_completed',
     ];
 
     protected static function booted(): void
@@ -48,11 +49,11 @@ class Customer extends Model
     {
         return [
             'move_in_date' => 'date',
-            'contract_period' => 'date',
             'contract_period_type' => 'boolean',
             'date_of_birth' => 'date',
             'is_married' => 'boolean',
             'emergency_contact_date_of_birth' => 'date',
+            'customer_info_completed' => 'boolean',
         ];
     }
 
@@ -88,17 +89,13 @@ class Customer extends Model
             'emergency_contact_address' => '現住所（緊急連絡先）',
             'emergency_contact_mobile' => '携帯番号（緊急連絡先）',
             'emergency_contact_email' => 'メールアドレス（緊急連絡先）',
+            'customer_info_completed' => '顧客情報入力済み',
         ];
     }
 
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class);
-    }
-
-    public function screeningCompletions(): HasMany
-    {
-        return $this->hasMany(ScreeningCompletion::class);
     }
 
     public function flowManagements(): HasMany

@@ -18,23 +18,22 @@ class SettlementManagementController extends Controller
         $search = AdminListSearch::term($request->input('search'));
 
         FlowManagement::query()
-            ->whereHas('screeningCompletion', fn ($query) => $query
-                ->where('flow_management_transition', true)
-                ->whereHas('application', fn ($query) => $query->where('screening_ok', true)))
+            ->where('flow_management_transition', true)
+            ->whereHas('application', fn ($query) => $query->where('screening_ok', true))
             ->each(fn (FlowManagement $flowManagement) => SettlementManagement::syncFromFlowManagement($flowManagement));
 
         $settlementManagements = SettlementManagement::query()
-            ->with(['flowManagement.screeningCompletion.application', 'customer'])
+            ->with(['flowManagement.application', 'customer'])
             ->whereHas('flowManagement', fn ($query) => $query
                 ->where('settlement_transition', true)
-                ->whereHas('screeningCompletion', fn ($query) => $query
-                    ->where('flow_management_transition', true)
-                    ->whereHas('application', fn ($query) => $query->where('screening_ok', true))))
+                ->where('flow_management_transition', true)
+                ->whereHas('application', fn ($query) => $query->where('screening_ok', true)))
             ->join('flow_managements', 'settlement_managements.flow_management_id', '=', 'flow_managements.id')
-            ->join('screening_completions', 'flow_managements.screening_completion_id', '=', 'screening_completions.id')
-            ->join('applications', 'screening_completions.application_id', '=', 'applications.id')
+            ->join('applications', 'flow_managements.application_id', '=', 'applications.id')
+            ->whereNotNull('settlement_managements.fee_type')
             ->tap(fn ($query) => AdminListSearch::applyToSettlementManagement($query, $search))
             ->orderByDesc('applications.created_at')
+            ->orderBy('settlement_managements.fee_type')
             ->select('settlement_managements.*')
             ->paginate(10)
             ->withQueryString();

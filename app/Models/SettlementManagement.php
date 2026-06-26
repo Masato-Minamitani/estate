@@ -7,11 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SettlementManagement extends Model
 {
+    public const FEE_TYPE_ADVERTISING = 'advertising';
+
+    public const FEE_TYPE_BROKER = 'broker_fee';
+
     protected $table = 'settlement_managements';
 
     protected $fillable = [
         'customer_id',
         'flow_management_id',
+        'fee_type',
         'management_number',
         'staff_in_charge',
         'property_name',
@@ -53,31 +58,92 @@ class SettlementManagement extends Model
         return $this->belongsTo(FlowManagement::class);
     }
 
-    public static function syncFromFlowManagement(FlowManagement $flowManagement): ?self
+    /**
+     * @return list<string>
+     */
+    public static function applicableFeeTypesFromApplication(?Application $application): array
     {
-        $settlementManagement = static::query()
-            ->where('flow_management_id', $flowManagement->id)
-            ->first();
-
-        if (! $flowManagement->settlement_transition) {
-            return $settlementManagement;
+        if ($application === null) {
+            return [];
         }
 
-        $flowManagement->loadMissing('screeningCompletion.application.customer');
-        $customer = $flowManagement->screeningCompletion?->application?->customer;
+        $types = [];
 
-        $settlementManagement ??= new static([
-            'flow_management_id' => $flowManagement->id,
-        ]);
+        if ((int) $application->advertising_fee >= 1) {
+            $types[] = self::FEE_TYPE_ADVERTISING;
+        }
 
-        $settlementManagement->customer_id = $flowManagement->customer_id;
-        $settlementManagement->staff_in_charge = $flowManagement->staff_in_charge;
-        $settlementManagement->property_name = $flowManagement->property_name_room;
-        $settlementManagement->contract_date = $customer?->contract_period;
+        if ((int) $application->broker_fee >= 1) {
+            $types[] = self::FEE_TYPE_BROKER;
+        }
 
-        $settlementManagement->save();
+        return $types;
+    }
 
-        return $settlementManagement;
+    public static function syncFromFlowManagement(FlowManagement $flowManagement): void
+    {
+        $flowManagement->loadMissing('application');
+
+        if (! $flowManagement->settlement_transition) {
+            return;
+        }
+
+        $application = $flowManagement->application;
+        $applicableTypes = self::applicableFeeTypesFromApplication($application);
+
+        if ($applicableTypes === []) {
+            self::query()
+                ->where('flow_management_id', $flowManagement->id)
+                ->delete();
+
+            return;
+        }
+
+        $legacyRow = self::query()
+            ->where('flow_management_id', $flowManagement->id)
+            ->whereNull('fee_type')
+            ->first();
+
+        foreach ($applicableTypes as $index => $feeType) {
+            $settlementManagement = self::query()
+                ->where('flow_management_id', $flowManagement->id)
+                ->where('fee_type', $feeType)
+                ->first();
+
+            if ($settlementManagement === null && $index === 0 && $legacyRow !== null) {
+                $settlementManagement = $legacyRow;
+            } elseif ($settlementManagement === null) {
+                $settlementManagement = new self([
+                    'flow_management_id' => $flowManagement->id,
+                    'fee_type' => $feeType,
+                ]);
+            }
+
+            $settlementManagement->customer_id = $flowManagement->customer_id;
+            $settlementManagement->staff_in_charge = $flowManagement->staff_in_charge;
+            $settlementManagement->property_name = $flowManagement->property_name;
+            $settlementManagement->fee_type = $feeType;
+            $settlementManagement->save();
+        }
+
+        self::query()
+            ->where('flow_management_id', $flowManagement->id)
+            ->where(function ($query) use ($applicableTypes) {
+                $query->whereNull('fee_type')
+                    ->orWhereNotIn('fee_type', $applicableTypes);
+            })
+            ->delete();
+    }
+
+    public function feeTypeDisplayLabel(): ?string
+    {
+        $application = $this->flowManagement?->application;
+
+        return match ($this->fee_type) {
+            self::FEE_TYPE_ADVERTISING => '広告料 '.number_format((int) ($application?->advertising_fee ?? 0)).'円',
+            self::FEE_TYPE_BROKER => '仲介手数料 '.number_format((int) ($application?->broker_fee ?? 0)).'円',
+            default => null,
+        };
     }
 
     /**
@@ -102,6 +168,7 @@ class SettlementManagement extends Model
             'id' => 'ID',
             'customer_id' => '顧客ID',
             'flow_management_id' => 'フロー管理ID',
+            'fee_type' => '手数料種別',
             'management_number' => '管理番号',
             'staff_in_charge' => '担当者',
             'property_name' => '物件名',

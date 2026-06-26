@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
-use App\Models\ScreeningCompletion;
+use App\Models\FlowManagement;
 use App\Support\AdminListSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,13 +16,23 @@ class ApplicationController extends Controller
     {
         $search = AdminListSearch::term($request->input('search'));
 
+        Application::query()
+            ->where('is_cancelled', false)
+            ->where('screening_ok', true)
+            ->each(fn (Application $application) => FlowManagement::syncFromApplication($application));
+
         $applications = Application::query()
+            ->with(['flowManagement', 'customer'])
+            ->where('is_cancelled', false)
             ->tap(fn ($query) => AdminListSearch::applyToApplication($query, $search))
             ->orderByDesc('created_at')
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.applications.index', compact('applications', 'search'));
+        $booleanFields = FlowManagement::booleanFields();
+        $columnLabels = FlowManagement::columnLabels();
+
+        return view('admin.applications.index', compact('applications', 'search', 'booleanFields', 'columnLabels'));
     }
 
     public function updateFlags(Request $request, Application $application): JsonResponse
@@ -51,8 +61,10 @@ class ApplicationController extends Controller
         ]);
 
         if ($validated['field'] === 'screening_ok') {
-            ScreeningCompletion::syncFromApplication($application->fresh());
+            FlowManagement::syncFromApplication($application->fresh());
         }
+
+        $application->load('flowManagement');
 
         return response()->json([
             'success' => true,
@@ -60,6 +72,25 @@ class ApplicationController extends Controller
             'value' => $application->{$validated['field']},
             'screening_ok' => $application->screening_ok,
             'is_cancelled' => $application->is_cancelled,
+            'flow_management_id' => $application->flowManagement?->id,
+        ]);
+    }
+
+    public function updateField(Request $request, Application $application): JsonResponse
+    {
+        $validated = $request->validate([
+            'field' => ['required', 'in:memo'],
+            'value' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $application->update([
+            $validated['field'] => $validated['value'] !== '' ? $validated['value'] : null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'field' => $validated['field'],
+            'value' => $application->{$validated['field']},
         ]);
     }
 }

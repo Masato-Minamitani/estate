@@ -47,7 +47,7 @@ class ApplicationSampleSeeder extends Seeder
             $customer = Customer::create([
                 'name' => $familyNames[$i % count($familyNames)].' '.$givenNames[$i % count($givenNames)],
                 'move_in_date' => $moveInDate,
-                'contract_period' => $contractPeriod,
+                'contract_period' => ($i % 3 + 1).'年',
                 'contract_period_type' => $i % 2 === 0,
                 'property_name' => $property['name'],
                 'room_number' => $property['room'],
@@ -71,13 +71,17 @@ class ApplicationSampleSeeder extends Seeder
 
             $isCancelled = $i % 7 === 0;
             $screeningOk = ! $isCancelled && $i % 4 === 0;
+            $hasBrokerFee = $i % 2 === 0;
 
             Application::create([
                 'customer_id' => $customer->id,
+                'property_name' => $property['name'],
+                'room_number' => $property['room'],
                 'staff_in_charge' => $staffMembers[$i % count($staffMembers)],
-                'property_name_room' => $property['name'].' '.$property['room'],
                 'scheduled_move_in_date' => $moveInDate,
                 'advertising_fee' => 50000 + ($i * 5000),
+                'has_broker_fee' => $hasBrokerFee,
+                'broker_fee' => $hasBrokerFee ? 100000 + ($i * 10000) : null,
                 'management_company_name' => $managementCompanies[$i % count($managementCompanies)],
                 'application_method' => $applicationMethods[$i % count($applicationMethods)],
                 'status' => $statuses[$i % count($statuses)],

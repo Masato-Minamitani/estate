@@ -1,11 +1,14 @@
 <!DOCTYPE html>
-@php($adminPageLoaderEnabled = false)
+@php($adminPageLoaderEnabled = true)
 <html lang="ja" @class(['admin-loading' => $adminPageLoaderEnabled])>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', '管理画面')</title>
+    <title>@yield('title', 'Care Earth Home-管理画面')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/care-earth-home-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/care-earth-home-logo.png') }}">
+    @stack('head')
     <style>
         @if ($adminPageLoaderEnabled)
         html.admin-loading { overflow: hidden; }
@@ -30,35 +33,34 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            width: min(300px, 72vw);
         }
-        .admin-page-loader-animation-wrap {
-            width: min(140px, 36vw);
-            aspect-ratio: 55 / 50;
+        .admin-page-loader-logo-wrap {
+            width: 100%;
         }
-        .admin-page-loader-animation-svg {
+        .admin-page-loader-logo-img {
             display: block;
             width: 100%;
-            height: 100%;
-            overflow: visible;
-            pointer-events: none;
+            height: auto;
+            opacity: 0;
+            animation: adminLoaderLogoFadeIn 0.75s ease-out forwards;
         }
-        .admin-loader-path-track {
-            fill: none;
-            stroke: #4680bd;
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.18;
+        @keyframes adminLoaderLogoFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .admin-loader-path-active {
-            fill: none;
-            stroke: #4680bd;
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-dasharray: var(--loader-path-length, 240);
-            stroke-dashoffset: var(--loader-path-length, 240);
-            transition: stroke-dashoffset 0.22s ease-out;
+        @media (prefers-reduced-motion: reduce) {
+            .admin-page-loader-logo-img {
+                opacity: 1;
+                animation: none;
+                transform: none;
+            }
         }
         @endif
     </style>
@@ -104,6 +106,17 @@
         }
         body.col-resizing { cursor: col-resize; user-select: none; }
 
+        .admin-fixed-table {
+            table-layout: fixed;
+            width: max-content;
+            min-width: 100%;
+        }
+
+        .admin-fixed-table th,
+        .admin-fixed-table td {
+            overflow: hidden;
+        }
+
         .admin-table-sticky {
             border-collapse: separate;
             border-spacing: 0;
@@ -127,6 +140,48 @@
             color: #fff;
         }
 
+        :root {
+            --admin-highlight-bg: #e0ffff;
+            --admin-row-selected-bg: #eff6ff;
+            --admin-row-selected-border: #5383c3;
+        }
+
+        .admin-table-sticky tbody tr {
+            cursor: pointer;
+        }
+
+        .admin-table-sticky tbody tr.is-row-selected > td {
+            background-color: var(--admin-row-selected-bg);
+        }
+
+        .admin-table-sticky tbody tr.is-row-selected > td:first-child {
+            box-shadow: inset 3px 0 0 var(--admin-row-selected-border);
+        }
+
+        .admin-table-sticky tbody tr input,
+        .admin-table-sticky tbody tr textarea,
+        .admin-table-sticky tbody tr select,
+        .admin-table-sticky tbody tr button,
+        .admin-table-sticky tbody tr a {
+            cursor: auto;
+        }
+
+        .admin-highlight-bg {
+            background-color: var(--admin-highlight-bg);
+            color: rgb(38 38 38);
+        }
+
+        .flow-section-disabled {
+            background-color: rgb(241 245 249);
+            color: rgb(148 163 184);
+        }
+
+        .flow-section-disabled input,
+        .flow-section-disabled textarea {
+            background-color: rgb(226 232 240);
+            cursor: not-allowed;
+        }
+
         .admin-main-content {
             opacity: 0;
             transform: translateY(10px);
@@ -134,6 +189,11 @@
 
         .admin-main-content.is-visible {
             animation: adminFadeIn 0.4s ease-out forwards;
+        }
+
+        .admin-main-content.is-visible-instant {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .admin-main-content.is-leaving {
@@ -179,22 +239,49 @@
         }
 
         .admin-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
             background: linear-gradient(to right, #85aecf 0%, #6d96c4 30%, #4a79b8 70%, #355f8f 100%);
             box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+        }
+
+        .admin-layout-body {
+            align-items: flex-start;
+        }
+
+        .admin-sidebar {
+            position: sticky;
+            top: var(--admin-header-height, 72px);
+            z-index: 40;
+            align-self: flex-start;
+            max-height: calc(100vh - var(--admin-header-height, 72px));
+            overflow-y: auto;
+        }
+
+        .admin-table-scroll {
+            max-height: calc(100vh - var(--admin-header-height, 72px) - 11rem);
+            overflow: auto;
+            overscroll-behavior: contain;
+        }
+
+        .admin-table-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background-color: rgb(241 245 249);
+        }
+
+        .admin-table-scroll .admin-table-sticky thead .sticky-col {
+            z-index: 5;
         }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
     @if ($adminPageLoaderEnabled)
-    <div id="admin-page-loader" class="admin-page-loader" aria-live="polite" aria-busy="true">
+    <div id="admin-page-loader" class="admin-page-loader" aria-live="polite" aria-busy="true" aria-label="読み込み中">
         <div class="admin-page-loader-inner">
-            <x-admin-loader-logo
-                role="progressbar"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow="0"
-                aria-label="読み込み中"
-            />
+            <x-admin-loader-logo />
         </div>
     </div>
     @endif
@@ -209,8 +296,8 @@
         </div>
     </header>
 
-    <div class="flex min-h-[calc(100vh-57px)]">
-        <aside class="w-52 shrink-0 bg-white border-r border-slate-200 p-4">
+    <div class="admin-layout-body flex min-h-[calc(100vh-var(--admin-header-height,72px))]">
+        <aside class="admin-sidebar w-52 shrink-0 bg-white border-r border-slate-200 p-4">
             <nav class="space-y-1">
                 <a
                     href="{{ route('admin.applications.index') }}"
@@ -219,16 +306,10 @@
                     申込一覧
                 </a>
                 <a
-                    href="{{ route('admin.screening-completions.index') }}"
-                    class="admin-nav-link block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.screening-completions.*') ? 'is-active' : '' }}"
+                    href="{{ route('admin.customers.index') }}"
+                    class="admin-nav-link block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.customers.index') ? 'is-active' : '' }}"
                 >
-                    審査完了一覧
-                </a>
-                <a
-                    href="{{ route('admin.flow-managements.index') }}"
-                    class="admin-nav-link block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.flow-managements.*') ? 'is-active' : '' }}"
-                >
-                    フロー管理
+                    顧客情報
                 </a>
                 <a
                     href="{{ route('admin.settlement-managements.index') }}"
@@ -295,13 +376,19 @@
     @stack('scripts')
     <script>
         function syncStickyCellBackgrounds(table) {
+            const selectedBg = getComputedStyle(document.documentElement).getPropertyValue('--admin-row-selected-bg').trim();
+
             table.querySelectorAll('tbody tr').forEach((row) => {
-                const rowStyle = getComputedStyle(row);
-                const backgroundColor = rowStyle.backgroundColor;
-                const color = rowStyle.color;
+                const isSelected = row.classList.contains('is-row-selected');
+
                 row.querySelectorAll('.sticky-col').forEach((cell) => {
-                    cell.style.backgroundColor = backgroundColor;
-                    cell.style.color = color;
+                    if (isSelected) {
+                        cell.style.backgroundColor = selectedBg;
+                        cell.style.color = 'rgb(38 38 38)';
+                    } else {
+                        cell.style.backgroundColor = '#fff';
+                        cell.style.color = '';
+                    }
                 });
             });
         }
@@ -335,10 +422,45 @@
             });
         };
 
+        function initAdminRowSelection() {
+            document.querySelectorAll('.admin-table-sticky tbody').forEach((tbody) => {
+                tbody.addEventListener('click', (event) => {
+                    if (event.target.closest('input, textarea, select, button, a, label')) {
+                        return;
+                    }
+
+                    const row = event.target.closest('tr');
+                    if (!row || row.parentElement !== tbody) {
+                        return;
+                    }
+
+                    const wasSelected = row.classList.contains('is-row-selected');
+                    tbody.querySelectorAll('tr.is-row-selected').forEach((selectedRow) => {
+                        selectedRow.classList.remove('is-row-selected');
+                    });
+
+                    if (!wasSelected) {
+                        row.classList.add('is-row-selected');
+                    }
+
+                    const table = tbody.closest('table');
+                    if (table) {
+                        syncStickyCellBackgrounds(table);
+                    }
+
+                    document.dispatchEvent(new CustomEvent('admin-row-selection-changed', {
+                        detail: { row: tbody.querySelector('tr.is-row-selected') },
+                    }));
+                });
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.admin-table-sticky').forEach((table) => {
                 updateStickyColumnOffsets(table);
             });
+
+            initAdminRowSelection();
 
             window.addEventListener('resize', window.refreshAdminStickyColumns);
         });
@@ -358,57 +480,12 @@
                 return;
             }
 
-            const pathEl = document.getElementById('admin-page-loader-path');
-            const progressTrack = loader?.querySelector('[role="progressbar"]');
             const loaderStartedAt = performance.now();
-            const minLoaderDuration = 600;
-            let progress = 0;
-            let progressTimer = null;
-            let pathLength = 0;
-
-            if (pathEl) {
-                pathLength = pathEl.getTotalLength();
-                pathEl.style.setProperty('--loader-path-length', String(pathLength));
-                pathEl.style.strokeDasharray = String(pathLength);
-                pathEl.style.strokeDashoffset = String(pathLength);
-            }
-
-            const setProgress = (value) => {
-                progress = Math.min(100, Math.max(0, value));
-
-                if (pathEl && pathLength > 0) {
-                    pathEl.style.strokeDashoffset = String(pathLength * (1 - progress / 100));
-                }
-
-                if (progressTrack) {
-                    progressTrack.setAttribute('aria-valuenow', String(Math.round(progress)));
-                }
-            };
-
-            const startProgress = () => {
-                progressTimer = window.setInterval(() => {
-                    if (progress >= 90) {
-                        return;
-                    }
-
-                    const increment = progress < 50 ? 4 : progress < 80 ? 2 : 0.5;
-                    setProgress(progress + increment);
-                }, 80);
-            };
-
-            const finishProgress = (callback) => {
-                if (progressTimer !== null) {
-                    window.clearInterval(progressTimer);
-                    progressTimer = null;
-                }
-
-                setProgress(100);
-                window.setTimeout(callback, 280);
-            };
+            const minLoaderDuration = 800;
 
             const hidePageLoader = () => {
                 if (!loader) {
-                    mainContent?.classList.add('is-visible');
+                    mainContent?.classList.add('is-visible-instant');
                     document.documentElement.classList.remove('admin-loading');
                     return;
                 }
@@ -416,25 +493,17 @@
                 const elapsed = performance.now() - loaderStartedAt;
                 const remaining = Math.max(0, minLoaderDuration - elapsed);
 
-                finishProgress(() => {
-                    if (progressTrack) {
-                        progressTrack.setAttribute('aria-valuenow', '100');
-                    }
+                window.setTimeout(() => {
+                    loader.classList.add('is-hidden');
+                    loader.setAttribute('aria-busy', 'false');
+                    mainContent?.classList.add('is-visible-instant');
+                    document.documentElement.classList.remove('admin-loading');
 
-                    window.setTimeout(() => {
-                        loader.classList.add('is-hidden');
-                        loader.setAttribute('aria-busy', 'false');
-                        mainContent?.classList.add('is-visible');
-                        document.documentElement.classList.remove('admin-loading');
-
-                        loader.addEventListener('transitionend', () => {
-                            loader.remove();
-                        }, { once: true });
-                    }, remaining);
-                });
+                    loader.addEventListener('transitionend', () => {
+                        loader.remove();
+                    }, { once: true });
+                }, remaining);
             };
-
-            startProgress();
 
             if (document.readyState === 'complete') {
                 hidePageLoader();

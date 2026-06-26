@@ -12,9 +12,11 @@ class FlowManagement extends Model
 
     protected $fillable = [
         'customer_id',
-        'screening_completion_id',
+        'application_id',
+        'flow_management_transition',
         'staff_in_charge',
-        'property_name_room',
+        'property_name',
+        'room_number',
         'application_method',
         'memo',
         'move_in_date',
@@ -46,6 +48,7 @@ class FlowManagement extends Model
     protected function casts(): array
     {
         return [
+            'flow_management_transition' => 'boolean',
             'move_in_date' => 'date',
             'scheduled_visit_date' => 'date',
             'key_handover_date' => 'date',
@@ -71,14 +74,39 @@ class FlowManagement extends Model
         ];
     }
 
+    public static function syncFromApplication(Application $application): ?self
+    {
+        $flowManagement = static::query()
+            ->where('application_id', $application->id)
+            ->first();
+
+        if (! $application->screening_ok) {
+            return $flowManagement;
+        }
+
+        $flowManagement ??= new static([
+            'application_id' => $application->id,
+        ]);
+
+        $flowManagement->customer_id = $application->customer_id;
+        $flowManagement->staff_in_charge = $application->staff_in_charge;
+        $flowManagement->property_name = $application->property_name;
+        $flowManagement->room_number = $application->room_number;
+        $flowManagement->application_method = $application->application_method;
+        $flowManagement->flow_management_transition = true;
+        $flowManagement->save();
+
+        return $flowManagement;
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function screeningCompletion(): BelongsTo
+    public function application(): BelongsTo
     {
-        return $this->belongsTo(ScreeningCompletion::class);
+        return $this->belongsTo(Application::class);
     }
 
     public function settlementManagements(): HasMany
@@ -94,9 +122,11 @@ class FlowManagement extends Model
         return [
             'id' => 'ID',
             'customer_id' => '顧客ID',
-            'screening_completion_id' => '審査完了ID',
+            'application_id' => '申込ID',
+            'flow_management_transition' => 'フロー管理移行チェック',
             'staff_in_charge' => '担当者',
-            'property_name_room' => '物件名＋部屋番号',
+            'property_name' => '物件名',
+            'room_number' => '部屋番号',
             'application_method' => '申込方法',
             'memo' => 'MEMO',
             'move_in_date' => '入居日',

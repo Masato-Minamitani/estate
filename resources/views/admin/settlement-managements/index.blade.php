@@ -1,7 +1,5 @@
 @extends('layouts.admin')
 
-@section('title', '決済金管理 - 管理画面')
-
 @section('content')
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-2xl font-bold text-slate-900">決済金管理</h2>
@@ -18,7 +16,7 @@
         </div>
     @else
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
+            <div class="admin-table-scroll overflow-x-auto">
                 <table class="admin-table-sticky min-w-full text-sm text-left" data-sticky-cols="4">
                     <thead class="bg-slate-100 text-slate-700">
                         <tr>
@@ -45,12 +43,17 @@
                                 data-settlement-management-id="{{ $settlementManagement->id }}"
                             >
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">
-                                    {{ $settlementManagement->flowManagement?->screeningCompletion?->application?->created_at?->format('Y/m/d H:i') ?? '—' }}
+                                    <div>
+                                        {{ $settlementManagement->flowManagement?->application?->created_at?->format('Y/m/d H:i') ?? '—' }}
+                                    </div>
+                                    @if ($feeTypeLabel = $settlementManagement->feeTypeDisplayLabel())
+                                        <div class="mt-1 text-xs font-medium text-primary-700">{{ $feeTypeLabel }}</div>
+                                    @endif
                                 </td>
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $settlementManagement->staff_in_charge ?? '—' }}</td>
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $settlementManagement->property_name ?? '—' }}</td>
                                 <td class="sticky-col sticky-col-last px-3 py-3 whitespace-nowrap">
-                                    {{ $settlementManagement->customer?->contract_period?->format('Y/m/d') ?? '—' }}
+                                    {{ $settlementManagement->customer?->contract_period ?? '—' }}
                                 </td>
                                 <td class="px-3 py-3 min-w-[100px]">
                                     <input
@@ -62,7 +65,7 @@
                                         value="{{ $settlementManagement->estimated_sales }}"
                                     >
                                 </td>
-                                <td class="px-3 py-3 text-center settlement-check-cell transition-colors {{ $settlementManagement->settlement_transfer_request ? 'bg-blue-100 text-white' : '' }}">
+                                <td class="px-3 py-3 text-center settlement-check-cell transition-colors {{ $settlementManagement->settlement_transfer_request ? 'admin-highlight-bg' : '' }}">
                                     <input
                                         type="checkbox"
                                         class="settlement-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -110,7 +113,7 @@
                                     >
                                 </td>
                                 @foreach (['ad_transfer_invoice_creation', 'offset_statement_printing', 'individual_invoice_printing'] as $field)
-                                    <td class="px-3 py-3 text-center settlement-check-cell transition-colors {{ $settlementManagement->{$field} ? 'bg-blue-100 text-white' : '' }}">
+                                    <td class="px-3 py-3 text-center settlement-check-cell transition-colors {{ $settlementManagement->{$field} ? 'admin-highlight-bg' : '' }}">
                                         <input
                                             type="checkbox"
                                             class="settlement-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -150,8 +153,7 @@
             return;
         }
 
-        cell.classList.toggle('bg-blue-100', checkbox.checked);
-        cell.classList.toggle('text-white', checkbox.checked);
+        cell.classList.toggle('admin-highlight-bg', checkbox.checked);
     }
 
     async function saveSettlementField(settlementManagementId, field, value, fieldLabel) {

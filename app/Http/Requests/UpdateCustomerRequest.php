@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCustomerRequest extends FormRequest
+class UpdateCustomerRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -33,6 +33,14 @@ class StoreCustomerRequest extends FormRequest
                 ),
             ]);
         }
+
+        if ($this->filled('contract_period')) {
+            $contractPeriod = trim((string) $this->input('contract_period'));
+            if (preg_match('/^\d+$/', $contractPeriod)) {
+                $contractPeriod .= '年';
+            }
+            $this->merge(['contract_period' => $contractPeriod]);
+        }
     }
 
     /**
@@ -43,7 +51,7 @@ class StoreCustomerRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'move_in_date' => ['required', 'date'],
-            'contract_period' => ['required', 'date', 'after_or_equal:move_in_date'],
+            'contract_period' => ['required', 'string', 'max:50', 'regex:/^\d+年$/'],
             'contract_period_type' => ['required', 'boolean'],
             'property_name' => ['required', 'string', 'max:255'],
             'room_number' => ['required', 'string', 'max:255'],
@@ -86,7 +94,6 @@ class StoreCustomerRequest extends FormRequest
             'boolean' => ':attributeを選択してください。',
             'regex' => ':attributeの形式が正しくありません。',
             'before_or_equal' => ':attributeは本日以前の日付を入力してください。',
-            'after_or_equal' => '契約期間は入居日/保険加入日以降の日付を入力してください。',
         ];
     }
 }
