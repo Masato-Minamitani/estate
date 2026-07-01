@@ -1,6 +1,6 @@
 @extends('layouts.rental')
 
-@section('title', 'Care Earth Home-管理画面')
+@section('title', 'Care Earth Home 賃貸-管理')
 
 @section('content')
     <div class="max-w-md mx-auto">

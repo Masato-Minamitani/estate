@@ -44,17 +44,22 @@
                                 data-settlement-management-id="{{ $settlementManagement->id }}"
                             >
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">
-                                    <div>
-                                        {{ $settlementManagement->flowManagement?->application?->created_at?->format('Y/m/d H:i') ?? '—' }}
-                                    </div>
-                                    @if ($feeTypeLabel = $settlementManagement->feeTypeDisplayLabel())
-                                        <div class="mt-1 text-xs font-medium text-primary-700">{{ $feeTypeLabel }}</div>
-                                    @endif
+                                    {{ $settlementManagement->flowManagement?->application?->created_at?->format('Y/m/d H:i') ?? '—' }}
                                 </td>
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $settlementManagement->staff_in_charge ?? '—' }}</td>
                                 <td class="sticky-col px-3 py-3 whitespace-nowrap">{{ $settlementManagement->property_name ?? '—' }}</td>
                                 <td class="sticky-col sticky-col-last px-3 py-3 whitespace-nowrap">
                                     {{ $settlementManagement->customer?->contract_period ?? '—' }}
+                                </td>
+                                <td class="px-3 py-3 whitespace-nowrap">
+                                    @if ($feeTypeLabel = $settlementManagement->feeTypeLabel())
+                                        <span
+                                            class="inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold {{ $settlementManagement->feeTypeBadgeClasses() }}"
+                                            aria-label="手数料種別: {{ $feeTypeLabel }}"
+                                        >{{ $feeTypeLabel }}</span>
+                                    @else
+                                        —
+                                    @endif
                                 </td>
                                 <td class="px-3 py-3 min-w-[100px]">
                                     <input
@@ -148,6 +153,10 @@
 
 @push('scripts')
 <script>
+    function settlementFieldUpdateUrl(settlementManagementId) {
+        return adminApiUrl('/admin/settlement-managements/' + encodeURIComponent(settlementManagementId) + '/fields');
+    }
+
     function updateSettlementCellState(checkbox) {
         const cell = checkbox.closest('.settlement-check-cell');
         if (!cell) {
@@ -158,7 +167,7 @@
     }
 
     async function saveSettlementField(settlementManagementId, field, value, fieldLabel) {
-        const response = await fetch(`/admin/settlement-managements/${settlementManagementId}/fields`, {
+        const response = await fetch(settlementFieldUpdateUrl(settlementManagementId), {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -169,8 +178,9 @@
         });
 
         if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.message || `${fieldLabel}の保存に失敗しました。`);
+            const data = await response.json().catch(() => ({}));
+            const validationMessage = data.errors?.value?.[0] ?? data.errors?.field?.[0];
+            throw new Error(validationMessage || data.message || `${fieldLabel}の保存に失敗しました。`);
         }
     }
 

@@ -12,16 +12,6 @@
                     案件番号: <span id="customer-info-case-number">未採番</span>
                 </p>
             </div>
-            <button
-                type="button"
-                id="customer-info-modal-close"
-                class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                aria-label="閉じる"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
         </div>
 
         <form id="customer-info-form" class="flex min-h-0 flex-1 flex-col">

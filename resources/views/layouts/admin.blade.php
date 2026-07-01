@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Care Earth Home-管理画面')</title>
+    <title>@yield('title', 'Care Earth Home 賃貸-管理')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/care-earth-home-logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/care-earth-home-logo.png') }}">
     @stack('head')
@@ -171,6 +171,18 @@
             color: rgb(38 38 38);
         }
 
+        .admin-table-sticky tbody td.master-check-cell.admin-highlight-bg,
+        .admin-table-sticky tbody td.flow-check-cell.admin-highlight-bg,
+        .admin-table-sticky tbody td.settlement-check-cell.admin-highlight-bg {
+            background-color: var(--admin-highlight-bg) !important;
+            color: rgb(38 38 38);
+        }
+
+        .admin-table-sticky tbody tr.is-row-selected > td.sticky-col {
+            background-color: var(--admin-row-selected-bg) !important;
+            color: rgb(38 38 38);
+        }
+
         .flow-section-disabled {
             background-color: rgb(241 245 249);
             color: rgb(148 163 184);
@@ -247,16 +259,16 @@
         }
 
         .admin-layout-body {
-            align-items: flex-start;
+            align-items: stretch;
+            flex: 1;
         }
 
         .admin-sidebar {
             position: sticky;
             top: var(--admin-header-height, 72px);
             z-index: 40;
-            align-self: flex-start;
-            max-height: calc(100vh - var(--admin-header-height, 72px));
-            overflow-y: auto;
+            align-self: stretch;
+            min-height: calc(100vh - var(--admin-header-height, 72px));
         }
 
         .admin-table-scroll {
@@ -277,7 +289,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
     @if ($adminPageLoaderEnabled)
     <div id="admin-page-loader" class="admin-page-loader" aria-live="polite" aria-busy="true" aria-label="読み込み中">
         <div class="admin-page-loader-inner">
@@ -324,7 +336,7 @@
         </div>
     </header>
 
-    <div class="admin-layout-body flex min-h-[calc(100vh-var(--admin-header-height,72px))]">
+    <div class="admin-layout-body flex flex-1 min-h-[calc(100vh-var(--admin-header-height,72px))]">
         <aside class="admin-sidebar w-52 shrink-0 bg-white border-r border-slate-200 p-4">
             <nav class="space-y-1">
                 <a
@@ -404,6 +416,8 @@
         };
     </script>
 
+    @include('partials.app-url-helpers')
+
     @stack('scripts')
     <script>
         function syncStickyCellBackgrounds(table) {
@@ -415,6 +429,10 @@
                 row.querySelectorAll('.sticky-col').forEach((cell) => {
                     if (isSelected) {
                         cell.style.backgroundColor = selectedBg;
+                        cell.style.color = 'rgb(38 38 38)';
+                    } else if (cell.classList.contains('admin-highlight-bg')) {
+                        const highlightBg = getComputedStyle(document.documentElement).getPropertyValue('--admin-highlight-bg').trim() || '#e0ffff';
+                        cell.style.backgroundColor = highlightBg;
                         cell.style.color = 'rgb(38 38 38)';
                     } else {
                         cell.style.backgroundColor = '#fff';
@@ -541,18 +559,19 @@
             } else {
                 window.addEventListener('load', hidePageLoader, { once: true });
             }
+
+            window.setTimeout(hidePageLoader, 5000);
         });
         @endif
 
         document.addEventListener('DOMContentLoaded', () => {
-            const mainContent = document.getElementById('admin-main-content');
             const navLinks = document.querySelectorAll('.admin-nav-link');
 
-            const setActiveNavLink = (activeLink) => {
-                navLinks.forEach((navLink) => {
-                    navLink.classList.toggle('is-active', navLink === activeLink);
+            navLinks.forEach((link) => {
+                link.addEventListener('click', () => {
+                    sessionStorage.setItem('admin-skip-loader', '1');
                 });
-            };
+            });
 
             document.querySelectorAll('.admin-pagination-link').forEach((link) => {
                 link.addEventListener('click', () => {
@@ -569,33 +588,6 @@
             document.querySelectorAll('.admin-search-form').forEach((form) => {
                 form.addEventListener('submit', () => {
                     sessionStorage.setItem('admin-skip-loader', '1');
-                });
-            });
-
-            navLinks.forEach((link) => {
-                link.addEventListener('click', (event) => {
-                    const targetPath = new URL(link.href).pathname;
-                    if (targetPath === window.location.pathname || !mainContent) {
-                        return;
-                    }
-
-                    event.preventDefault();
-                    setActiveNavLink(link);
-
-                    mainContent.classList.add('is-leaving');
-
-                    let navigated = false;
-                    const navigate = () => {
-                        if (navigated) {
-                            return;
-                        }
-                        navigated = true;
-                        sessionStorage.setItem('admin-skip-loader', '1');
-                        window.location.href = link.href;
-                    };
-
-                    mainContent.addEventListener('animationend', navigate, { once: true });
-                    setTimeout(navigate, 300);
                 });
             });
         });

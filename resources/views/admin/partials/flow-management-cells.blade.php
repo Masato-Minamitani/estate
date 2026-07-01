@@ -44,7 +44,7 @@
     >
 </td>
 @foreach ($booleanFields as $field)
-    @if ($field === 'settlement_transition')
+    @if (in_array($field, ['settlement_transition', 'has_broker_fee'], true))
         @continue
     @endif
     @if ($field === 'transfer_request_to_applicant')
@@ -71,6 +71,15 @@
         >
     </td>
 @endforeach
+<td class="flow-section-cell px-3 py-3 text-center flow-check-cell transition-colors {{ $flowEditable && $flowManagement?->has_broker_fee ? 'admin-highlight-bg' : '' }} {{ $flowEditable ? '' : 'flow-section-disabled' }}">
+    <input
+        type="checkbox"
+        class="flow-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+        data-field="has_broker_fee"
+        @checked($flowManagement?->has_broker_fee)
+        @disabled(! $flowEditable)
+    >
+</td>
 <td class="flow-section-cell px-3 py-3 text-center flow-check-cell transition-colors {{ $flowEditable && $flowManagement?->settlement_transition ? 'admin-highlight-bg' : '' }} {{ $flowEditable ? '' : 'flow-section-disabled' }}">
     <input
         type="checkbox"

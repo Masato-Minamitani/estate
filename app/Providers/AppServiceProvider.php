@@ -16,10 +16,19 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $url = config('careearth.url', config('app.url'));
+        if ($this->app->bound('request')) {
+            $request = $this->app->make('request');
 
-        if ($url) {
-            URL::forceRootUrl($url);
+            if ($request->hasHeader('Host')) {
+                $configuredPath = parse_url((string) config('app.url'), PHP_URL_PATH) ?: '';
+                $root = rtrim($request->getSchemeAndHttpHost().rtrim($configuredPath, '/'), '/');
+
+                if ($root !== '') {
+                    URL::forceRootUrl($root);
+                }
+            }
+        } elseif ($url = config('app.url')) {
+            URL::forceRootUrl(rtrim((string) $url, '/'));
         }
 
         Route::bind('user', fn (string $value) => CareEarthUser::query()->findOrFail($value));

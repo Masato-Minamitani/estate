@@ -58,26 +58,35 @@ class SettlementManagement extends Model
         return $this->belongsTo(FlowManagement::class);
     }
 
-    /**
-     * @return list<string>
-     */
-    public static function applicableFeeTypesFromApplication(?Application $application): array
+    public static function applicableFeeTypesFromFlowManagement(FlowManagement $flowManagement): array
     {
-        if ($application === null) {
-            return [];
-        }
-
+        $application = $flowManagement->application;
         $types = [];
 
-        if ((int) $application->advertising_fee >= 1) {
+        if ($application !== null && (int) $application->advertising_fee >= 1) {
             $types[] = self::FEE_TYPE_ADVERTISING;
         }
 
-        if ((int) $application->broker_fee >= 1) {
+        if ($flowManagement->has_broker_fee) {
             $types[] = self::FEE_TYPE_BROKER;
         }
 
         return $types;
+    }
+
+    public static function feeAmountFromFlowManagement(FlowManagement $flowManagement, string $feeType): ?int
+    {
+        $application = $flowManagement->application;
+
+        return match ($feeType) {
+            self::FEE_TYPE_ADVERTISING => $application !== null && (int) $application->advertising_fee >= 1
+                ? (int) $application->advertising_fee
+                : null,
+            self::FEE_TYPE_BROKER => $application !== null && (int) $application->broker_fee >= 1
+                ? (int) $application->broker_fee
+                : null,
+            default => null,
+        };
     }
 
     public static function syncFromFlowManagement(FlowManagement $flowManagement): void
@@ -85,11 +94,14 @@ class SettlementManagement extends Model
         $flowManagement->loadMissing('application');
 
         if (! $flowManagement->settlement_transition) {
+            self::query()
+                ->where('flow_management_id', $flowManagement->id)
+                ->delete();
+
             return;
         }
 
-        $application = $flowManagement->application;
-        $applicableTypes = self::applicableFeeTypesFromApplication($application);
+        $applicableTypes = self::applicableFeeTypesFromFlowManagement($flowManagement);
 
         if ($applicableTypes === []) {
             self::query()
@@ -123,6 +135,7 @@ class SettlementManagement extends Model
             $settlementManagement->staff_in_charge = $flowManagement->staff_in_charge;
             $settlementManagement->property_name = $flowManagement->property_name;
             $settlementManagement->fee_type = $feeType;
+            $settlementManagement->estimated_sales = self::feeAmountFromFlowManagement($flowManagement, $feeType);
             $settlementManagement->save();
         }
 
@@ -135,14 +148,21 @@ class SettlementManagement extends Model
             ->delete();
     }
 
-    public function feeTypeDisplayLabel(): ?string
+    public function feeTypeLabel(): ?string
     {
-        $application = $this->flowManagement?->application;
-
         return match ($this->fee_type) {
-            self::FEE_TYPE_ADVERTISING => '広告料 '.number_format((int) ($application?->advertising_fee ?? 0)).'円',
-            self::FEE_TYPE_BROKER => '仲介手数料 '.number_format((int) ($application?->broker_fee ?? 0)).'円',
+            self::FEE_TYPE_ADVERTISING => '広告料',
+            self::FEE_TYPE_BROKER => '仲介手数料',
             default => null,
+        };
+    }
+
+    public function feeTypeBadgeClasses(): string
+    {
+        return match ($this->fee_type) {
+            self::FEE_TYPE_ADVERTISING => 'bg-amber-100 text-amber-950 border-amber-500',
+            self::FEE_TYPE_BROKER => 'bg-emerald-100 text-emerald-900 border-emerald-600',
+            default => 'bg-slate-100 text-slate-700 border-slate-300',
         };
     }
 

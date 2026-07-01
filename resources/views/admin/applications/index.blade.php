@@ -36,7 +36,7 @@
                             <th class="w-[110px] px-3 py-3 font-medium whitespace-nowrap">入居予定日</th>
                             <th class="w-[140px] px-3 py-3 font-medium whitespace-nowrap">管理会社名</th>
                             <th class="w-[180px] px-3 py-3 font-medium whitespace-nowrap">状況</th>
-                            <th class="w-[180px] px-3 py-3 font-medium whitespace-nowrap">MEMO</th>
+                            <th class="w-[180px] px-3 py-3 font-medium whitespace-nowrap">備考</th>
                             <th class="w-[90px] px-3 py-3 font-medium whitespace-nowrap text-center">営業要対応</th>
                             <th class="w-[80px] px-3 py-3 font-medium whitespace-nowrap text-center">審査ＯＫ</th>
                             <th class="w-[80px] px-3 py-3 font-medium whitespace-nowrap text-center">キャンセル</th>
@@ -45,7 +45,7 @@
                             <th class="w-[120px] px-3 py-3 font-medium whitespace-nowrap">{{ $columnLabels['scheduled_visit_date'] }}</th>
                             <th class="w-[110px] px-3 py-3 font-medium whitespace-nowrap">{{ $columnLabels['key_handover_date'] }}</th>
                             @foreach ($booleanFields as $field)
-                                @if ($field === 'settlement_transition')
+                                @if (in_array($field, ['settlement_transition', 'has_broker_fee'], true))
                                     @continue
                                 @endif
                                 @if ($field === 'transfer_request_to_applicant')
@@ -56,6 +56,7 @@
                                 @endif
                                 <th class="w-[100px] px-3 py-3 font-medium whitespace-nowrap text-center">{{ $columnLabels[$field] }}</th>
                             @endforeach
+                            <th class="w-[110px] px-3 py-3 font-medium whitespace-nowrap text-center">{{ $columnLabels['has_broker_fee'] }}</th>
                             <th class="w-[120px] px-3 py-3 font-medium whitespace-nowrap text-center">{{ $columnLabels['settlement_transition'] }}</th>
                         </tr>
                     </thead>
@@ -90,7 +91,7 @@
                                         class="application-memo-field w-full min-h-[2.5rem] rounded border border-slate-200 px-2 py-1 text-sm resize-y focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                                         rows="2"
                                         maxlength="2000"
-                                        placeholder="MEMOを入力"
+                                        placeholder="備考を入力"
                                     >{{ $application->memo }}</textarea>
                                 </td>
                                 <td class="px-3 py-3 text-center">
@@ -367,7 +368,7 @@
                     return;
                 }
 
-                const saveCancelled = fetch(`/admin/applications/${applicationId}/flags`, {
+                const saveCancelled = fetch(adminApiUrl(`/admin/applications/${applicationId}/flags`), {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -399,7 +400,7 @@
             const value = target.checked ? 1 : 0;
 
             try {
-                const response = await fetch(`/admin/applications/${applicationId}/flags`, {
+                const response = await fetch(adminApiUrl(`/admin/applications/${applicationId}/flags`), {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -487,7 +488,7 @@
             updateFlowCellState(target);
 
             try {
-                const response = await fetch(`/admin/flow-managements/${flowManagementId}/fields`, {
+                const response = await fetch(adminApiUrl(`/admin/flow-managements/${flowManagementId}/fields`), {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -535,7 +536,7 @@
             }
 
             try {
-                const response = await fetch(`/admin/flow-managements/${flowManagementId}/fields`, {
+                const response = await fetch(adminApiUrl(`/admin/flow-managements/${flowManagementId}/fields`), {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -588,7 +589,7 @@
             }
 
             try {
-                const response = await fetch(`/admin/flow-managements/${flowManagementId}/fields`, {
+                const response = await fetch(adminApiUrl(`/admin/flow-managements/${flowManagementId}/fields`), {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -629,7 +630,7 @@
             }
 
             try {
-                const response = await fetch(`/admin/applications/${applicationId}/fields`, {
+                const response = await fetch(adminApiUrl(`/admin/applications/${applicationId}/fields`), {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -642,14 +643,14 @@
                 if (!response.ok) {
                     textarea.value = previousValue;
                     const data = await response.json();
-                    alert(data.message || 'MEMOの保存に失敗しました。');
+                    alert(data.message || '備考の保存に失敗しました。');
                     return;
                 }
 
                 previousValue = value;
             } catch (error) {
                 textarea.value = previousValue;
-                alert('MEMOの保存に失敗しました。');
+                alert('備考の保存に失敗しました。');
             }
         };
 
@@ -666,7 +667,6 @@
     const customerInfoErrors = document.getElementById('customer-info-errors');
     const customerInfoCaseNumber = document.getElementById('customer-info-case-number');
     const customerInfoBooleanFields = ['contract_period_type', 'is_married'];
-    const customerInfoCloseButton = document.getElementById('customer-info-modal-close');
     const customerInfoCancelButton = document.getElementById('customer-info-modal-cancel');
     const customerInfoSaveButton = document.getElementById('customer-info-modal-save');
     let activeCustomerApplicationId = null;
@@ -784,7 +784,7 @@
         customerInfoSaveButton.disabled = true;
 
         try {
-            const response = await fetch(`/admin/applications/${applicationId}/customer`, {
+            const response = await fetch(adminApiUrl(`/admin/applications/${applicationId}/customer`), {
                 headers: { 'Accept': 'application/json' },
             });
             const data = await response.json();
@@ -810,14 +810,7 @@
     };
 
     customerInfoButton?.addEventListener('click', openCustomerInfoModal);
-    customerInfoCloseButton?.addEventListener('click', closeCustomerInfoModal);
     customerInfoCancelButton?.addEventListener('click', closeCustomerInfoModal);
-
-    customerInfoModal?.addEventListener('click', (event) => {
-        if (event.target === customerInfoModal) {
-            closeCustomerInfoModal();
-        }
-    });
 
     customerInfoForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -834,7 +827,7 @@
         customerInfoSaveButton.disabled = true;
 
         try {
-            const response = await fetch(`/admin/applications/${activeCustomerApplicationId}/customer`, {
+            const response = await fetch(adminApiUrl(`/admin/applications/${activeCustomerApplicationId}/customer`), {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

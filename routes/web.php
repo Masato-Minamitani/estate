@@ -5,7 +5,12 @@ use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\FlowManagementController as AdminFlowManagementController;
 use App\Http\Controllers\Admin\SettlementManagementController as AdminSettlementManagementController;
 use App\Http\Controllers\ApplicationFormController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FileController;
 use App\Http\Controllers\Master\MasterDataController;
+use App\Http\Controllers\PropertyController;
+use App\Http\Controllers\ReferenceController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/applications/create');
@@ -36,12 +41,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::patch('/flow-managements/{flowManagement}/fields', [AdminFlowManagementController::class, 'updateField'])->name('flow-managements.update-field');
 
-        Route::get('/flow-managements', [AdminFlowManagementController::class, 'index'])->name('flow-managements.index');
-        Route::patch('/flow-managements/{flowManagement}/fields', [AdminFlowManagementController::class, 'updateField'])->name('flow-managements.update-field');
-
-        Route::get('/settlement-managements', [AdminSettlementManagementController::class, 'index'])->name('settlement-managements.index');
-        Route::patch('/settlement-managements/{settlementManagement}/fields', [AdminSettlementManagementController::class, 'updateField'])->name('settlement-managements.update-field');
-    });
+    Route::get('/settlement-managements', [AdminSettlementManagementController::class, 'index'])->name('settlement-managements.index');
+    Route::patch('/settlement-managements/{settlementManagement}/fields', [AdminSettlementManagementController::class, 'updateField'])->name('settlement-managements.update-field');
 });
 
 // ── 物件マスター（CareEarthHome 認証） ──

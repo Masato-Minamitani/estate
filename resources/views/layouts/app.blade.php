@@ -3,9 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Care Earth Home-入力フォーム')</title>
+    <title>@yield('title', '賃貸申込フォーム')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/care-earth-home-logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/care-earth-home-logo.png') }}">
+    @include('partials.app-url-helpers')
     <script>
         (function () {
             if (sessionStorage.getItem('form-page-transition') === '1') {

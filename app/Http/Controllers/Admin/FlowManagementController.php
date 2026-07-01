@@ -71,7 +71,7 @@ class FlowManagementController extends Controller
             $validated['field'] => $validated['value'],
         ]);
 
-        if ($validated['field'] === 'settlement_transition') {
+        if (in_array($validated['field'], ['settlement_transition', 'has_broker_fee'], true)) {
             SettlementManagement::syncFromFlowManagement($flowManagement->fresh());
         }
 

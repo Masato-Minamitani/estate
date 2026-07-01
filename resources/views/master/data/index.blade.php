@@ -1,6 +1,6 @@
 @extends($layout)
 
-@section('title', $pageTitle.' - Care Earth Home')
+@section('title', $showTabs ? '賃貸-'.$masterTabTitle.' マスター管理' : $pageTitle)
 
 @push('head')
     <style>
@@ -40,12 +40,6 @@
             overflow: auto;
             overscroll-behavior: contain;
         }
-
-        .master-tab-link.is-active {
-            border-color: #5383c3;
-            color: #5383c3;
-            background-color: #eff6ff;
-        }
     </style>
 @endpush
 
@@ -54,9 +48,6 @@
     <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between shrink-0">
         <div>
             <h2 class="text-2xl font-bold text-slate-900">{{ $pageTitle }}</h2>
-            @if ($showTabs)
-                <p class="mt-1 text-sm text-slate-600">データベースの全カラムを表示・編集できます。</p>
-            @endif
         </div>
         <form method="GET" action="{{ url()->current() }}" class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto lg:max-w-md">
             @if ($showTabs)
@@ -74,34 +65,15 @@
                     検索
                 </button>
                 @if ($search !== '')
-                    <a href="{{ url()->current() }}" class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                    <a
+                        href="{{ $showTabs ? route('master.data.index', ['table' => $tableKey]) : url()->current() }}"
+                        class="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
                         クリア
                     </a>
                 @endif
             </div>
         </form>
-    </div>
-
-    @if ($showTabs)
-    <div class="mb-4 flex flex-wrap gap-2 border-b border-slate-200 pb-1 shrink-0">
-        @foreach ($tables as $key => $table)
-            <a
-                href="{{ route('master.data.index', array_filter(['table' => $key, 'search' => $search !== '' ? $search : null])) }}"
-                class="master-tab-link rounded-t-lg border border-b-0 border-transparent px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 {{ $tableKey === $key ? 'is-active' : '' }}"
-            >
-                {{ $table['label'] }}
-            </a>
-        @endforeach
-    </div>
-    @endif
-
-    <div class="mb-3 text-sm text-slate-600 shrink-0">
-        表示中: <span class="font-medium text-slate-900">{{ $tableLabel }}</span>
-        <span class="text-slate-400">|</span>
-        @if (in_array('id', $columns, true))
-            {{ $columnLabels['id'] ?? 'ID' }}・
-        @endif
-        作成日時・更新日時は読み取り専用です。
     </div>
 
     @if ($records->isEmpty())
@@ -140,11 +112,23 @@
                                         $fieldValue = \App\Support\MasterFieldHelper::formatValueForInput($record, $column, $inputType);
                                         $displayValue = \App\Support\MasterFieldHelper::formatValueForDisplay($record, $column);
                                     @endphp
-                                    <td class="px-3 py-2 min-w-[120px] {{ $column === 'id' ? 'sticky-col' : '' }}">
+                                    @php
+                                        $tdClasses = 'px-3 py-2 min-w-[120px]';
+                                        if ($column === 'id') {
+                                            $tdClasses .= ' sticky-col';
+                                        }
+                                        if ($inputType === 'checkbox') {
+                                            $tdClasses .= ' master-check-cell transition-colors';
+                                            if ($record->{$column}) {
+                                                $tdClasses .= ' admin-highlight-bg';
+                                            }
+                                        }
+                                    @endphp
+                                    <td class="{{ $tdClasses }}">
                                         @if ($inputType === 'readonly')
                                             <span class="text-slate-600 whitespace-nowrap">{{ $displayValue }}</span>
                                         @elseif ($inputType === 'checkbox')
-                                            <div class="text-center master-check-cell transition-colors {{ $record->{$column} ? 'admin-highlight-bg' : '' }}">
+                                            <div class="text-center">
                                                 <input
                                                     type="checkbox"
                                                     class="master-field-checkbox h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
@@ -210,18 +194,31 @@
 
 @push('scripts')
 <script>
+    function masterFieldUpdateUrl(table, recordId) {
+        return adminApiUrl('/master/data/' + encodeURIComponent(table) + '/' + encodeURIComponent(recordId) + '/fields');
+    }
+
+    function csrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    }
+
     function updateMasterCheckCell(checkbox) {
-        const cell = checkbox.closest('.master-check-cell');
+        const cell = checkbox.closest('td.master-check-cell');
         if (!cell) return;
         cell.classList.toggle('admin-highlight-bg', checkbox.checked);
+
+        const table = cell.closest('table');
+        if (table && typeof window.refreshAdminStickyColumns === 'function') {
+            window.refreshAdminStickyColumns();
+        }
     }
 
     async function saveMasterField(table, recordId, field, value, fieldLabel) {
-        const response = await fetch(`/master/data/${table}/${recordId}/fields`, {
+        const response = await fetch(masterFieldUpdateUrl(table, recordId), {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken(),
                 'Accept': 'application/json',
             },
             body: JSON.stringify({ field, value }),
@@ -229,7 +226,8 @@
 
         if (!response.ok) {
             const data = await response.json().catch(() => ({}));
-            throw new Error(data.message || `${fieldLabel}の保存に失敗しました。`);
+            const validationMessage = data.errors?.value?.[0];
+            throw new Error(validationMessage || data.message || `${fieldLabel}の保存に失敗しました。`);
         }
 
         return response.json();

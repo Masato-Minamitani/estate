@@ -42,6 +42,7 @@ class FlowManagement extends Model
         'original_copy_to_applicant',
         'key_receipt_return',
         'contract_copy_storage',
+        'has_broker_fee',
         'settlement_transition',
     ];
 
@@ -70,6 +71,7 @@ class FlowManagement extends Model
             'original_copy_to_applicant' => 'boolean',
             'key_receipt_return' => 'boolean',
             'contract_copy_storage' => 'boolean',
+            'has_broker_fee' => 'boolean',
             'settlement_transition' => 'boolean',
         ];
     }
@@ -94,6 +96,10 @@ class FlowManagement extends Model
         $flowManagement->room_number = $application->room_number;
         $flowManagement->application_method = $application->application_method;
         $flowManagement->flow_management_transition = true;
+        if ($application->has_broker_fee === true || (int) $application->broker_fee >= 1) {
+            $flowManagement->has_broker_fee = true;
+        }
+
         $flowManagement->save();
 
         return $flowManagement;
@@ -128,7 +134,7 @@ class FlowManagement extends Model
             'property_name' => '物件名',
             'room_number' => '部屋番号',
             'application_method' => '申込方法',
-            'memo' => 'MEMO',
+            'memo' => '備考',
             'move_in_date' => '入居日',
             'document_deadline' => '書類期日',
             'scheduled_visit_date' => '来社予定日',
@@ -152,6 +158,7 @@ class FlowManagement extends Model
             'original_copy_to_applicant' => '原本コピー本人配布',
             'key_receipt_return' => '鍵受領書など返送',
             'contract_copy_storage' => '契約書コピー/保管',
+            'has_broker_fee' => '仲介手数料あり',
             'settlement_transition' => '決済金管理に移行',
         ];
     }
@@ -180,6 +187,7 @@ class FlowManagement extends Model
             'original_copy_to_applicant',
             'key_receipt_return',
             'contract_copy_storage',
+            'has_broker_fee',
             'settlement_transition',
         ];
     }

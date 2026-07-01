@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'マスター管理 - Care Earth Home')</title>
+    <title>@yield('title', '賃貸-マスター管理 マスター管理')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/care-earth-home-logo.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -70,6 +70,20 @@
         .admin-highlight-bg {
             background-color: #e0ffff;
         }
+
+        .admin-table-sticky tbody td.master-check-cell.admin-highlight-bg,
+        .admin-table-sticky tbody td.flow-check-cell.admin-highlight-bg,
+        .admin-table-sticky tbody td.settlement-check-cell.admin-highlight-bg {
+            background-color: #e0ffff !important;
+        }
+
+        .admin-table-sticky tbody tr.is-row-selected > td {
+            background-color: #eff6ff;
+        }
+
+        .admin-table-sticky tbody tr.is-row-selected > td.sticky-col {
+            background-color: #eff6ff !important;
+        }
         .master-page {
             display: flex;
             flex-direction: column;
@@ -92,13 +106,30 @@
             overflow: hidden;
         }
 
-        .master-tab-link.is-active {
-            border-color: #5383c3;
-            color: #5383c3;
-            background-color: #eff6ff;
+        .admin-layout-body {
+            align-items: stretch;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .master-sidebar {
+            position: sticky;
+            top: var(--master-header-height, 72px);
+            z-index: 40;
+            align-self: stretch;
+            min-height: calc(100vh - var(--master-header-height, 72px));
+        }
+
+        .master-main-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            min-width: 0;
         }
     </style>
     @stack('head')
+    @include('partials.app-url-helpers')
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen flex flex-col overflow-hidden">
     <header class="admin-header">
@@ -117,9 +148,13 @@
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col min-h-0 p-8 overflow-hidden">
-        @yield('content')
-    </main>
+    <div class="admin-layout-body flex flex-1 min-h-[calc(100vh-var(--master-header-height,72px))]">
+        @include('master.partials.sidebar')
+
+        <main class="master-main-content flex-1 p-8 overflow-hidden">
+            @yield('content')
+        </main>
+    </div>
 
     @stack('scripts')
 </body>

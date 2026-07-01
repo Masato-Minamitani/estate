@@ -69,7 +69,7 @@ class Application extends Model
             'management_company_name' => '管理会社名',
             'application_method' => '申込方法',
             'status' => '状況',
-            'memo' => 'MEMO',
+            'memo' => '備考',
             'property_documents_url' => '物件資料',
             'appliance_support_notes' => '家電サポート・CB等',
             'sales_action_required' => '営業要対応',

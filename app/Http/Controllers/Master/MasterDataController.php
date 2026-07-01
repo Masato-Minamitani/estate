@@ -43,6 +43,14 @@ class MasterDataController extends Controller
             default => 'マスター管理',
         };
 
+        $masterTabTitle = match ($tableKey) {
+            'flow_managements' => 'フロー管理',
+            'customers' => '顧客',
+            'settlement_managements' => '決済金管理',
+            'applications' => '申込',
+            default => 'マスター管理',
+        };
+
         $hiddenColumns = $this->hiddenColumnsFor($request, $tableKey);
         $columns = array_values(array_filter(
             $schema['columns'],
@@ -55,6 +63,7 @@ class MasterDataController extends Controller
             'tableKey' => $tableKey,
             'tableLabel' => $tables[$tableKey]['label'],
             'pageTitle' => $pageTitle,
+            'masterTabTitle' => $masterTabTitle,
             'showTabs' => $request->routeIs('master.*'),
             'columns' => $columns,
             'columnLabels' => $schema['labels'],

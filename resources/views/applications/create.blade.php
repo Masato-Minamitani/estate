@@ -1,4 +1,4 @@
-@extends('layouts.rental')
+@extends('layouts.app')
 
 @section('content')
     <div class="mb-8">
@@ -28,19 +28,6 @@
                     required
                 />
                 <x-form-field label="広告料" name="advertising_fee" type="number" min="0" required />
-                <div class="md:col-span-2 space-y-3">
-                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                        <input
-                            type="checkbox"
-                            name="has_broker_fee"
-                            value="1"
-                            class="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                            @checked(old('has_broker_fee'))
-                        >
-                        仲介手数料あり
-                    </label>
-                    <x-form-field label="仲介手数料（金額）" name="broker_fee" type="number" min="0" />
-                </div>
                 <x-form-field
                     label="仲介手数料"
                     name="has_broker_fee"
@@ -51,7 +38,7 @@
                 <div id="broker-fee-field" class="hidden">
                     <x-form-field label="仲介手数料（金額）" name="broker_fee" type="number" min="0" />
                 </div>
-                <div class="relative md:col-span-2" id="management-company-field">
+                <div class="relative md:col-span-2 overflow-visible" id="management-company-field">
                     <label for="management_company_name" class="block text-sm font-medium text-slate-700 mb-1">
                         管理会社名
                         <span class="text-red-500">*</span>
@@ -82,7 +69,7 @@
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
             <h3 class="text-base font-semibold text-slate-900 border-b border-slate-100 pb-3">その他</h3>
             <div class="grid grid-cols-1 gap-5">
-                <x-form-field label="MEMO" name="memo" type="textarea" />
+                <x-form-field label="備考" name="memo" type="textarea" />
                 <x-form-field label="物件資料" name="property_documents_url" type="url" placeholder="https://" />
                 <x-form-field label="家電サポート・CB等" name="appliance_support_notes" type="textarea" />
             </div>
@@ -102,31 +89,41 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            initBrokerFeeField();
+            initManagementCompanyAutocomplete();
+        });
+
+        function initBrokerFeeField() {
             const select = document.getElementById('has_broker_fee');
             const wrapper = document.getElementById('broker-fee-field');
             const input = document.getElementById('broker_fee');
 
-            if (select && wrapper && input) {
-                function toggleBrokerFeeField() {
-                    const show = select.value === '1';
-                    wrapper.classList.toggle('hidden', !show);
-                    input.required = show;
-                    if (!show) {
-                        input.value = '';
-                    }
-                }
-
-                select.addEventListener('change', toggleBrokerFeeField);
-                toggleBrokerFeeField();
+            if (!select || !wrapper || !input) {
+                return;
             }
 
+            function toggleBrokerFeeField() {
+                const show = select.value === '1';
+                wrapper.classList.toggle('hidden', !show);
+                input.required = show;
+                if (!show) {
+                    input.value = '';
+                }
+            }
+
+            select.addEventListener('change', toggleBrokerFeeField);
+            toggleBrokerFeeField();
+        }
+
+        function initManagementCompanyAutocomplete() {
             const managementCompanyInput = document.getElementById('management_company_name');
             const suggestionsList = document.getElementById('management-company-suggestions');
-            const suggestionsUrl = @json(route('applications.management-company-suggestions'));
 
             if (!managementCompanyInput || !suggestionsList) {
                 return;
             }
+
+            const suggestionsUrl = adminApiUrl('/applications/management-company-suggestions');
 
             let debounceTimer = null;
             let fetchController = null;
@@ -251,6 +248,6 @@
                     hideSuggestions();
                 }
             });
-        });
+        }
     </script>
 @endpush
